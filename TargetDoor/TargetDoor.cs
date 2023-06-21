@@ -8,8 +8,8 @@ namespace TargetDoor {
 
         public override string Name => "TargetDoor";
         public override string Author => "Ika";
-        public override Version RequiredExiledVersion => new Version(4, 2, 5);
-        public override Version Version => new Version(1, 0, 0);
+        public override Version RequiredExiledVersion => new Version(7, 0, 0);
+        public override Version Version => new Version(1, 3, 0);
 
         private EventsHandler eventsHandler;
 
