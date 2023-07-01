@@ -7,8 +7,8 @@
     <ProjectGuid>{CAB84CFC-2008-4CDB-84AB-2446E1E5CF81}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>TargetDoor</RootNamespace>
-    <AssemblyName>TargetDoor</AssemblyName>
+    <RootNamespace>ShootingInteractions</RootNamespace>
+    <AssemblyName>ShootingInteractions</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -34,23 +34,24 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Assembly-CSharp">
-      <HintPath>$(IKA_PACKAGES)\Packages\Exiled-7.0.0-rc.5\Assembly-CSharp.dll</HintPath>
-    </Reference>
     <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(IKA_PACKAGES)\Packages\Exiled-7.0.0-rc.5\Assembly-CSharp-firstpass.dll</HintPath>
+      <HintPath>..\..\..\Packages\Exiled-7.1.1\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
-    <Reference Include="Exiled.API, Version=7.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+    <Reference Include="Assembly-CSharp_publicized">
+      <HintPath>..\..\..\Packages\Exiled-7.1.1\Assembly-CSharp_publicized.dll</HintPath>
+    </Reference>
+    <Reference Include="Exiled.API, Version=7.1.0.0, Culture=neutral, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(IKA_PACKAGES)\Packages\Exiled-7.0.0-rc.5\Exiled.API.dll</HintPath>
+      <HintPath>..\..\..\Packages\Exiled-7.1.1\Exiled.API.dll</HintPath>
     </Reference>
-    <Reference Include="Exiled.Events, Version=7.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+    <Reference Include="Exiled.Events, Version=7.1.0.0, Culture=neutral, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(IKA_PACKAGES)\Exiled-7.0.0-rc.5\Exiled.Events.dll</HintPath>
+      <HintPath>..\..\..\Packages\Exiled-7.1.1\Exiled.Events.dll</HintPath>
     </Reference>
-    <Reference Include="Mirror">
-      <HintPath>$(IKA_PACKAGES)\Packages\Exiled-7.0.0-rc.5\Mirror.dll</HintPath>
+    <Reference Include="Mirror, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\Packages\Exiled-7.1.1\Mirror.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -62,20 +63,21 @@
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>$(IKA_PACKAGES)\Packages\Exiled-7.0.0-rc.5\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>..\..\..\Packages\Exiled-7.1.1\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
-    <Reference Include="UnityEngine.PhysicsModule">
-      <HintPath>$(IKA_PACKAGES)\Packages\Exiled-7.0.0-rc.5\UnityEngine.PhysicsModule.dll</HintPath>
+    <Reference Include="UnityEngine.PhysicsModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\Packages\Exiled-7.1.1\UnityEngine.PhysicsModule.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Config.cs" />
     <Compile Include="EventsHandler.cs" />
-    <Compile Include="TargetDoor.cs" />
+    <Compile Include="ShootingInteractions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <WCFMetadata Include="Connected Services\" />
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

@@ -2,19 +2,19 @@
 using Exiled.API.Features;
 using PlayerEvent = Exiled.Events.Handlers.Player;
 
-namespace TargetDoor {
-    public class TargetDoor : Plugin<Config> {
-        private static readonly TargetDoor Singleton = new TargetDoor();
+namespace ShootingInteractions {
+    public class ShootingInteractions : Plugin<Config> {
+        private static readonly ShootingInteractions Singleton = new ShootingInteractions();
 
-        public override string Name => "TargetDoor";
+        public override string Name => "ShootingInteractions";
         public override string Author => "Ika";
-        public override Version RequiredExiledVersion => new Version(7, 0, 0);
-        public override Version Version => new Version(1, 3, 0);
+        public override Version RequiredExiledVersion => new Version(7, 1, 1);
+        public override Version Version => new Version(1, 4, 0);
 
         private EventsHandler eventsHandler;
 
-        private TargetDoor() { }
-        public static TargetDoor Instance => Singleton;
+        private ShootingInteractions() { }
+        public static ShootingInteractions Instance => Singleton;
 
         public override void OnEnabled() {
             RegisterEvents();
