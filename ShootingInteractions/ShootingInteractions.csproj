@@ -36,22 +36,23 @@
   <ItemGroup>
     <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Packages\Exiled-7.1.1\Assembly-CSharp-firstpass.dll</HintPath>
+      <HintPath>..\..\..\Packages\Exiled-7.2.0\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
-    <Reference Include="Assembly-CSharp_publicized">
-      <HintPath>..\..\..\Packages\Exiled-7.1.1\Assembly-CSharp_publicized.dll</HintPath>
-    </Reference>
-    <Reference Include="Exiled.API, Version=7.1.0.0, Culture=neutral, processorArchitecture=AMD64">
+    <Reference Include="Assembly-CSharp_publicized, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Packages\Exiled-7.1.1\Exiled.API.dll</HintPath>
+      <HintPath>..\..\..\Packages\Exiled-7.2.0\Assembly-CSharp_publicized.dll</HintPath>
     </Reference>
-    <Reference Include="Exiled.Events, Version=7.1.0.0, Culture=neutral, processorArchitecture=AMD64">
+    <Reference Include="Exiled.API, Version=7.1.1.0, Culture=neutral, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Packages\Exiled-7.1.1\Exiled.Events.dll</HintPath>
+      <HintPath>..\..\..\Packages\Exiled-7.2.0\Exiled.API.dll</HintPath>
+    </Reference>
+    <Reference Include="Exiled.Events, Version=7.1.1.0, Culture=neutral, processorArchitecture=AMD64">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\Packages\Exiled-7.2.0\Exiled.Events.dll</HintPath>
     </Reference>
     <Reference Include="Mirror, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Packages\Exiled-7.1.1\Mirror.dll</HintPath>
+      <HintPath>..\..\..\Packages\Exiled-7.2.0\Mirror.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -63,11 +64,11 @@
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Packages\Exiled-7.1.1\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>..\..\..\Packages\Exiled-7.2.0\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.PhysicsModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Packages\Exiled-7.1.1\UnityEngine.PhysicsModule.dll</HintPath>
+      <HintPath>..\..\..\Packages\Exiled-7.2.0\UnityEngine.PhysicsModule.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -75,9 +76,6 @@
     <Compile Include="EventsHandler.cs" />
     <Compile Include="ShootingInteractions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

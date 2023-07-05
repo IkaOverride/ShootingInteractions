@@ -72,7 +72,7 @@ namespace ShootingInteractions {
                 // If the buttons should break and should break after the door moved
                 if (doorBreak && config.DoorMoveBeforeBreaking) {
 
-                    // Wait time to lock after the animation
+                    // Wait time, to lock only after the animation is done
                     float additionalWait = 0f;
 
                     if (door.IsCheckpoint)

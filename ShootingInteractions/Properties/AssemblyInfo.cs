@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("ShootingInteractions")]
-[assembly: AssemblyDescription("Custom interactions when shooting with a weapon!")]
+[assembly: AssemblyDescription("Custom interactions when shooting with weapons!")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("ShootingInteractions")]
