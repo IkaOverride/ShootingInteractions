@@ -16,7 +16,7 @@ namespace ShootingInteractions {
         public bool Doors { get; set; } = true;
 
         [Description("Should the plugin work with keycard doors? (false = never opens, true = opens if the keycard is in their inventory)")]
-        public bool CheckKeycard { get; set; } = false;
+        public bool DoorCheckKeycard { get; set; } = false;
 
         [Description("Percentage of chance for a door's buttons to break (0 = never break, 100 = always break)")]
         public byte DoorButtonsBreakChance { get; set; } = 0;

@@ -30,7 +30,7 @@ namespace ShootingInteractions {
             Config config = ShootingInteractions.Instance.Config;
 
             // Doors (If there's a RegularDoorButton in the GameObject)
-            if (gameObject.GetComponentInParent<RegularDoorButton>() is RegularDoorButton button) {
+            if (gameObject.GetComponentInParent<RegularDoorButton>() is RegularDoorButton button && config.Doors) {
 
                 // Get the door associated to the button
                 Door door = Door.Get(button.GetComponentInParent<DoorVariant>());
@@ -61,7 +61,7 @@ namespace ShootingInteractions {
                 }
 
                 // Deny access if a keycard is required and either CheckKeycard config is set to false or the player doesn't have the right keycard to open it
-                if (door.RequiredPermissions.RequiredPermissions != KeycardPermissions.None && (config.CheckKeycard == false || !args.Player.Items.Any(item => item is Keycard keycard && (keycard.Base.Permissions & door.RequiredPermissions.RequiredPermissions) != 0))) {
+                if (door.RequiredPermissions.RequiredPermissions != KeycardPermissions.None && (config.DoorCheckKeycard == false || !args.Player.Items.Any(item => item is Keycard keycard && (keycard.Base.Permissions & door.RequiredPermissions.RequiredPermissions) != 0))) {
                     door.PlaySound(DoorBeepType.PermissionDenied);
                     return;
                 }
@@ -93,7 +93,7 @@ namespace ShootingInteractions {
             }
 
             // Elevators (If there's an ElevatorPanel in the GameObject)
-            else if (gameObject.GetComponentInParent<ElevatorPanel>() is ElevatorPanel panel) {
+            else if (gameObject.GetComponentInParent<ElevatorPanel>() is ElevatorPanel panel && config.Elevators) {
                 
                 // Get the elevator associated to the button
                 Lift elevator = Lift.Get(panel.AssignedChamber);
