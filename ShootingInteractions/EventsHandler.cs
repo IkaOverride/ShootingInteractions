@@ -10,6 +10,10 @@ using DoorBeepType = Exiled.API.Enums.DoorBeepType;
 using DoorLockType = Exiled.API.Enums.DoorLockType;
 using Random = System.Random;
 using System.Collections.Generic;
+using InventorySystem.Items.ThrowableProjectiles;
+using Exiled.API.Features.Doors;
+using ElevatorDoor = Interactables.Interobjects.ElevatorDoor;
+using Exiled.API.Features.Pickups;
 
 namespace ShootingInteractions {
 
@@ -75,10 +79,15 @@ namespace ShootingInteractions {
                     // Wait time, to lock only after the animation is done
                     float additionalWait = 0f;
 
+                    // Wait time for a checkpoint door
                     if (door.IsCheckpoint)
                         additionalWait = 7.5f;
+
+                    // Wait time for a gate door
                     else if (door.IsGate)
                         additionalWait = 2.25f;
+
+                    // Wait time for a normal door
                     else
                         additionalWait = 1f;
 
@@ -94,7 +103,7 @@ namespace ShootingInteractions {
 
             // Elevators (If there's an ElevatorPanel in the GameObject)
             else if (gameObject.GetComponentInParent<ElevatorPanel>() is ElevatorPanel panel && config.Elevators) {
-                
+
                 // Get the elevator associated to the button
                 Lift elevator = Lift.Get(panel.AssignedChamber);
 
@@ -148,6 +157,16 @@ namespace ShootingInteractions {
                     if (config.ElevatorButtonsBreakTime > 0f)
                         Timing.CallDelayed(config.ElevatorButtonsBreakTime + 6f, () => elevator.ChangeLock(DoorLockReason.None));
                 }
+            } 
+            
+            // Grenades (If there's a TimedGrenadePickup in the GameObject)
+            else if (gameObject.GetComponentInParent<TimedGrenadePickup>() is TimedGrenadePickup pickupBase && config.Grenades) {
+
+                // Get the GrenadePickup associated to the timed one
+                GrenadePickup pickup = Pickup.Get(pickupBase).As<GrenadePickup>();
+
+                // Explode and mark the player that is shooting as the attacker
+                pickup.Explode(args.Player.Footprint);
             }
         }
     }

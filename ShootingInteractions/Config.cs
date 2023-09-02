@@ -39,5 +39,8 @@ namespace ShootingInteractions {
 
         [Description("For how long should the elevator's buttons stay broken (0 = infinite)")]
         public float ElevatorButtonsBreakTime { get; set; } = 15;
+
+        [Description("Should the plugin work with grenades")]
+        public bool Grenades = true;
     }
 }
