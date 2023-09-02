@@ -41,6 +41,6 @@ namespace ShootingInteractions {
         public float ElevatorButtonsBreakTime { get; set; } = 15;
 
         [Description("Should the plugin work with grenades")]
-        public bool Grenades = true;
+        public bool Grenades = false;
     }
 }

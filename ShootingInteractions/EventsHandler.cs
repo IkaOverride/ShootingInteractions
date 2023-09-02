@@ -65,7 +65,7 @@ namespace ShootingInteractions {
                 }
 
                 // Deny access if a keycard is required and either CheckKeycard config is set to false or the player doesn't have the right keycard to open it
-                if (door.RequiredPermissions.RequiredPermissions != KeycardPermissions.None && (config.DoorCheckKeycard == false || !args.Player.Items.Any(item => item is Keycard keycard && (keycard.Base.Permissions & door.RequiredPermissions.RequiredPermissions) != 0))) {
+                if (door.RequiredPermissions.RequiredPermissions != KeycardPermissions.None && !args.Player.IsBypassModeEnabled && (config.DoorCheckKeycard == false || !args.Player.Items.Any(item => item is Keycard keycard && (keycard.Base.Permissions & door.RequiredPermissions.RequiredPermissions) != 0))) {
                     door.PlaySound(DoorBeepType.PermissionDenied);
                     return;
                 }
