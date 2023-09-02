@@ -161,12 +161,10 @@ namespace ShootingInteractions {
             
             // Grenades (If there's a TimedGrenadePickup in the GameObject)
             else if (gameObject.GetComponentInParent<TimedGrenadePickup>() is TimedGrenadePickup pickupBase && config.Grenades) {
-                
-                // Get the GrenadePickup associated to the timed one
-                GrenadePickup pickup = Pickup.Get(pickupBase).As<GrenadePickup>();
 
-                // Explode and mark the player that is shooting as the attacker
-                pickup.Explode(args.Player.Footprint);
+                // Make grenade explode
+                pickupBase._replaceNextFrame = true;
+                pickupBase._attacker = args.Player.Footprint;
             }
         }
     }
