@@ -161,7 +161,7 @@ namespace ShootingInteractions {
             
             // Grenades (If there's a TimedGrenadePickup in the GameObject)
             else if (gameObject.GetComponentInParent<TimedGrenadePickup>() is TimedGrenadePickup pickupBase && config.Grenades) {
-
+                
                 // Get the GrenadePickup associated to the timed one
                 GrenadePickup pickup = Pickup.Get(pickupBase).As<GrenadePickup>();
 
