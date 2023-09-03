@@ -8,12 +8,10 @@ using System.Linq;
 using UnityEngine;
 using DoorBeepType = Exiled.API.Enums.DoorBeepType;
 using DoorLockType = Exiled.API.Enums.DoorLockType;
-using Random = System.Random;
 using System.Collections.Generic;
 using InventorySystem.Items.ThrowableProjectiles;
 using Exiled.API.Features.Doors;
 using ElevatorDoor = Interactables.Interobjects.ElevatorDoor;
-using Exiled.API.Features.Pickups;
 
 namespace ShootingInteractions {
 
@@ -48,7 +46,7 @@ namespace ShootingInteractions {
                     return;
 
                 // Should the buttons break ? (Generate number 1 to 100 -> Check if lesser than config percentage)
-                bool doorBreak = new Random().Next(1, 101) <= config.DoorButtonsBreakChance;
+                bool doorBreak = Random.Range(1, 101) <= config.DoorButtonsBreakChance;
 
                 Log.Debug("Someone shoot a door button while it could be interacted with. Should its buttons break : " + doorBreak);
 
@@ -116,7 +114,7 @@ namespace ShootingInteractions {
                     return;
 
                 // Should the buttons break ? (Generate number 1 to 100 -> Check if lesser than config percentage)
-                bool elevatorBreak = new Random().Next(1, 101) <= config.ElevatorButtonsBreakChance;
+                bool elevatorBreak = Random.Range(1, 101) <= config.ElevatorButtonsBreakChance;
 
                 Log.Debug("Someone shoot an elevator button while it could be interacted with. Should its buttons break : " + elevatorBreak);
 
@@ -157,14 +155,19 @@ namespace ShootingInteractions {
                     if (config.ElevatorButtonsBreakTime > 0f)
                         Timing.CallDelayed(config.ElevatorButtonsBreakTime + 6f, () => elevator.ChangeLock(DoorLockReason.None));
                 }
-            } 
+            }
             
             // Grenades (If there's a TimedGrenadePickup in the GameObject)
-            else if (gameObject.GetComponentInParent<TimedGrenadePickup>() is TimedGrenadePickup pickupBase && config.Grenades) {
+            else if (gameObject.GetComponentInParent<TimedGrenadePickup>() is TimedGrenadePickup pickup && config.Grenades) {
+                
+                // Create a new grenade
+                ExplosiveGrenade grenade = (ExplosiveGrenade) Item.Create(ItemType.GrenadeHE);
 
-                // Make grenade explode
-                pickupBase._replaceNextFrame = true;
-                pickupBase._attacker = args.Player.Footprint;
+                // Spawn the active grenade to the position of the pickup with the player as the owner
+                grenade.SpawnActive(pickup.Position, args.Player);
+
+                // Destroy the pickup
+                Object.Destroy(pickup.gameObject);
             }
         }
     }
