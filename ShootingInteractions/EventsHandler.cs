@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using InventorySystem.Items.ThrowableProjectiles;
 using Exiled.API.Features.Doors;
 using ElevatorDoor = Interactables.Interobjects.ElevatorDoor;
+using Exiled.API.Features.Pickups;
 
 namespace ShootingInteractions {
 
@@ -161,10 +162,15 @@ namespace ShootingInteractions {
             else if (gameObject.GetComponentInParent<TimedGrenadePickup>() is TimedGrenadePickup pickup && config.Grenades) {
                 
                 // Create a new grenade
-                ExplosiveGrenade grenade = (ExplosiveGrenade) Item.Create(ItemType.GrenadeHE);
+                Item item = Item.Create(Pickup.Get(pickup).Type);
 
-                // Spawn the active grenade to the position of the pickup with the player as the owner
-                grenade.SpawnActive(pickup.Position, args.Player);
+                // Spawn the active explosive grenade to the position of the pickup with the player as the owner
+                if (item is ExplosiveGrenade explosiveGrenade)
+                    explosiveGrenade.SpawnActive(pickup.Position, args.Player);
+
+                // Spawn the active flash grenade to the position of the pickup with the player as the owner
+                else if (item is FlashGrenade flashGrenade)
+                    flashGrenade.SpawnActive(pickup.Position, args.Player);
 
                 // Destroy the pickup
                 Object.Destroy(pickup.gameObject);
