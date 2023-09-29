@@ -11,10 +11,10 @@ namespace ShootingInteractions.Configs {
         [Description("Percentage of chance for the buttons to break")]        
         public byte ButtonsBreakChance { get; set; } = 0;
 
-        [Description("Should the door move/do its animation before the buttons break")]
-        public bool MoveBeforeBreaking { get; set; } = false;
-
         [Description("For how long should the buttons stay broken (0 = infinite)")]
         public float ButtonsBreakTime { get; set; } = 0;
+
+        [Description("Should the door still move/do its animation if the buttons should break")]
+        public bool MoveBeforeBreaking { get; set; } = false;
     }
 }
