@@ -10,19 +10,19 @@ namespace ShootingInteractions.Configs {
         [Description("Indicates whether the plugin's debug logs are enabled or not")]
         public bool Debug { get; set; } = false;
 
-        [Description("Normal doors")]
+        [Description("Normal doors buttons")]
         public DoorInteraction Doors { get; set; } = new();
 
-        [Description("Checkpoint doors")]
+        [Description("Checkpoint doors buttons")]
         public DoorInteraction Checkpoints { get; set; } = new();
 
-        [Description("Gates")]
+        [Description("Gates buttons")]
         public DoorInteraction Gates { get; set; } = new();
 
-        [Description("Bulletproof lockers")]
+        [Description("Bulletproof lockers keycard readers")]
         public LockerInteraction BulletproofLockers { get; set; } = new();
 
-        [Description("Elevators")]
+        [Description("Elevators buttons")]
         public ElevatorInteraction Elevators { get; set; } = new();
 
         [Description("Frag grenades")]
