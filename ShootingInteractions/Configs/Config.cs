@@ -23,7 +23,7 @@ namespace ShootingInteractions.Configs {
         public LockerInteraction BulletproofLockers { get; set; } = new();
 
         [Description("Elevators")]
-        public DoorInteraction Elevators { get; set; } = new();
+        public ElevatorInteraction Elevators { get; set; } = new();
 
         [Description("Frag grenades")]
         public TimedProjectileInteraction FragGrenades { get; set; } = new();
