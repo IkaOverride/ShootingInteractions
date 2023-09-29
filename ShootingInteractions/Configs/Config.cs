@@ -13,8 +13,8 @@ namespace ShootingInteractions.Configs {
         [Description("Normal doors")]
         public DoorInteraction Doors { get; set; } = new();
 
-        [Description("Checkpoints doors")]
-        public DoorInteraction CheckpointDoors { get; set; } = new();
+        [Description("Checkpoint doors")]
+        public DoorInteraction Checkpoints { get; set; } = new();
 
         [Description("Gates")]
         public DoorInteraction Gates { get; set; } = new();

@@ -68,7 +68,7 @@ namespace ShootingInteractions {
                     cooldown = checkpoint.Base._openingTime + checkpoint.WaitTime + checkpoint.WarningTime;
 
                     // Checkpoint interaction
-                    doorInteraction = Config.CheckpointDoors;
+                    doorInteraction = Config.Checkpoints;
                 }
 
                 // If the door is a basic door
