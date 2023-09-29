@@ -14,7 +14,7 @@ namespace ShootingInteractions.Configs {
         [Description("Should the door move/do its animation before the buttons break")]
         public bool MoveBeforeBreaking { get; set; } = false;
 
-        [Description("For how long should the buttons stay broken (0 => infinite)")]
+        [Description("For how long should the buttons stay broken (0 = infinite)")]
         public float ButtonsBreakTime { get; set; } = 0;
     }
 }
