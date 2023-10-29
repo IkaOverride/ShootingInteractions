@@ -153,7 +153,7 @@ namespace ShootingInteractions {
                 chamber.SetDoor(!chamber.IsOpen, locker._grantedBeep);
 
                 // Refresh opened syncvar
-                locker.RefreshOpenedSyncvar();              
+                locker.RefreshOpenedSyncvar();
             }
 
             // Elevators (If there's an ElevatorPanel in the GameObject)
@@ -215,64 +215,61 @@ namespace ShootingInteractions {
             // Grenades (If there's a TimedGrenadePickup in the GameObject)
             else if (gameObject.GetComponentInParent<TimedGrenadePickup>() is TimedGrenadePickup grenadePickup) {
 
+                // Get the exiled pickup associated to the basegame pickup
                 Pickup pickup = Pickup.Get(grenadePickup);
 
-                // If the grenade is a custom item
-                if (CustomItem.TryGet(pickup, out CustomItem customItem) && Config.CustomGrenades.IsEnabled) {
+                // Custom grenades
+                if (CustomItem.TryGet(pickup, out CustomItem customItem)) {
 
-                    // If we can spawn a pickup based on the custom item.
-                    if (CustomItem.TrySpawn(customItem.Id, grenadePickup.Position, out Pickup customPickup)) {
+                    // Return if custom grenades aren't enabled
+                    if (!Config.CustomGrenades.IsEnabled)
+                        return;
 
-                        // Cast to a grenade pickup
-                        TimedGrenadePickup customGrenadePickup = (TimedGrenadePickup) customPickup.Base;
+                    // Set the attacker to the player shooting
+                    grenadePickup._attacker = args.Player.Footprint;
 
-                        // Set the attacker to the player shooting
-                        customGrenadePickup._attacker = args.Player.Footprint;
+                    // Explode the custom grenade
+                    grenadePickup._replaceNextFrame = true;
+                } 
+                
+                // Normal grenades
+                else {
 
-                        // Explode the custom grenade
-                        customGrenadePickup._replaceNextFrame = true;
+                    // Create a new grenade
+                    Item item = Item.Create(pickup.Info.ItemId);
 
-                        // Destroy the original pickup
+                    // If the grenade is a frag grenade and it is enabled in the config
+                    if (item is ExplosiveGrenade explosiveGrenade && Config.FragGrenades.IsEnabled) {
+
+                        // Explode the frag grenade instantly if it is set in the config
+                        if (Config.FragGrenades.ExplodeInstantly)
+                            explosiveGrenade.FuseTime = 0.1f;
+
+                        // Spawn the frag grenade to the position of the pickup with the player as the owner and activate it
+                        explosiveGrenade.SpawnActive(grenadePickup.Position, args.Player);
+
+                        // Destroy the pickup
                         Object.Destroy(grenadePickup.gameObject);
                     }
 
-                    return;
+                    // If the grenade is a flashbang and it is enabled in config
+                    else if (item is FlashGrenade flashGrenade && Config.Flashbangs.IsEnabled) {
+
+                        // Explode the flashbang instantly if it is set in the config
+                        if (Config.Flashbangs.ExplodeInstantly)
+                            flashGrenade.FuseTime = 0.1f;
+
+                        // Spawn the flashbang to the position of the pickup with the player as the owner and activate it
+                        flashGrenade.SpawnActive(grenadePickup.Position, args.Player);
+
+                        // Destroy the pickup
+                        Object.Destroy(grenadePickup.gameObject);
+                    }
+
+                    // If the grenade isn't enabled in the config, destroy the newly created grenade
+                    else
+                        Object.Destroy(item.Base.gameObject);
                 }
-
-                // Create a new grenade
-                Item item = Item.Create(pickup.Info.ItemId);
-
-                // If the grenade is a frag grenade and it is enabled in the config
-                if (item is ExplosiveGrenade explosiveGrenade && Config.FragGrenades.IsEnabled) {
-
-                    // Explode the frag grenade instantly if it is set in the config
-                    if (Config.FragGrenades.ExplodeInstantly)
-                        explosiveGrenade.FuseTime = 0.1f;
-
-                    // Spawn the frag grenade to the position of the pickup with the player as the owner and activate it
-                    explosiveGrenade.SpawnActive(grenadePickup.Position, args.Player);
-
-                    // Destroy the pickup
-                    Object.Destroy(grenadePickup.gameObject);
-                }
-
-                // If the grenade is a flashbang and it is enabled in config
-                else if (item is FlashGrenade flashGrenade && Config.Flashbangs.IsEnabled) {
-
-                    // Explode the flashbang instantly if it is set in the config
-                    if (Config.Flashbangs.ExplodeInstantly)
-                        flashGrenade.FuseTime = 0.1f;
-
-                    // Spawn the flashbang to the position of the pickup with the player as the owner and activate it
-                    flashGrenade.SpawnActive(grenadePickup.Position, args.Player);
-
-                    // Destroy the pickup
-                    Object.Destroy(grenadePickup.gameObject);
-                }
-
-                // If the grenade isn't enabled in the config, destroy the newly created grenade
-                else
-                    Object.Destroy(item.Base.gameObject);
             }
 
             // SCP-2176 (If there's a Scp2176Projectile in the GameObject): immediately shatter the SCP-2176
