@@ -8,9 +8,12 @@ namespace ShootingInteractions {
         private static readonly ShootingInteractions Singleton = new();
 
         public override string Name => "ShootingInteractions";
+
         public override string Author => "Ika";
-        public override Version RequiredExiledVersion => new(8, 2, 1);
-        public override Version Version => new(2, 0, 0);
+
+        public override Version RequiredExiledVersion => new(8, 3, 5);
+
+        public override Version Version => new(2, 1, 0);
 
         private EventsHandler eventsHandler;
 

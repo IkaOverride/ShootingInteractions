@@ -31,6 +31,9 @@ namespace ShootingInteractions.Configs {
         [Description("Flashbangs")]
         public TimedProjectileInteraction Flashbangs { get; set; } = new();
 
+        [Description("Custom Grenades")]
+        public ProjectileInteraction CustomGrenades { get; set; } = new();
+
         [Description("SCP-2176")]
         public ProjectileInteraction Scp2176 { get; set; } = new();
     }

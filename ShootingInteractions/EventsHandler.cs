@@ -18,6 +18,7 @@ using BasicDoor = Exiled.API.Features.Doors.BasicDoor;
 using CheckpointDoor = Exiled.API.Features.Doors.CheckpointDoor;
 using ElevatorDoor = Interactables.Interobjects.ElevatorDoor;
 using Scp2176Projectile = InventorySystem.Items.ThrowableProjectiles.Scp2176Projectile;
+using Exiled.CustomItems.API.Features;
 
 namespace ShootingInteractions {
 
@@ -35,7 +36,7 @@ namespace ShootingInteractions {
         public void OnShooting(ShootingEventArgs args) {
 
             // Check what's the player shooting at with a raycast, and return if the raycast doesn't hit something within 70 distance (maximum realistic distance)
-            if (!Physics.Raycast(args.Player.CameraTransform.position, args.Player.CameraTransform.forward, out RaycastHit raycastHit, 70f, ~(1 << 13 | 1 << 16)))
+            if (!Physics.Raycast(args.Player.CameraTransform.position, args.Player.CameraTransform.forward, out RaycastHit raycastHit, 70f, ~(1 << 1 | 1 << 13 | 1 << 16 | 1 << 28)))
                 return;
 
             // Get the GameObject associated to the raycast
@@ -212,10 +213,34 @@ namespace ShootingInteractions {
             }
 
             // Grenades (If there's a TimedGrenadePickup in the GameObject)
-            else if (gameObject.GetComponentInParent<TimedGrenadePickup>() is TimedGrenadePickup pickup) {
+            else if (gameObject.GetComponentInParent<TimedGrenadePickup>() is TimedGrenadePickup grenadePickup) {
+
+                Pickup pickup = Pickup.Get(grenadePickup);
+
+                // If the grenade is a custom item
+                if (CustomItem.TryGet(pickup, out CustomItem customItem) && Config.CustomGrenades.IsEnabled) {
+
+                    // If we can spawn a pickup based on the custom item.
+                    if (CustomItem.TrySpawn(customItem.Id, grenadePickup.Position, out Pickup customPickup)) {
+
+                        // Cast to a grenade pickup
+                        TimedGrenadePickup customGrenadePickup = (TimedGrenadePickup) customPickup.Base;
+
+                        // Set the attacker to the player shooting
+                        customGrenadePickup._attacker = args.Player.Footprint;
+
+                        // Explode the custom grenade
+                        customGrenadePickup._replaceNextFrame = true;
+
+                        // Destroy the original pickup
+                        Object.Destroy(grenadePickup.gameObject);
+                    }
+
+                    return;
+                }
 
                 // Create a new grenade
-                Item item = Item.Create(Pickup.Get(pickup).Type);
+                Item item = Item.Create(pickup.Info.ItemId);
 
                 // If the grenade is a frag grenade and it is enabled in the config
                 if (item is ExplosiveGrenade explosiveGrenade && Config.FragGrenades.IsEnabled) {
@@ -225,10 +250,10 @@ namespace ShootingInteractions {
                         explosiveGrenade.FuseTime = 0.1f;
 
                     // Spawn the frag grenade to the position of the pickup with the player as the owner and activate it
-                    explosiveGrenade.SpawnActive(pickup.Position, args.Player);
+                    explosiveGrenade.SpawnActive(grenadePickup.Position, args.Player);
 
                     // Destroy the pickup
-                    Object.Destroy(pickup.gameObject);
+                    Object.Destroy(grenadePickup.gameObject);
                 }
 
                 // If the grenade is a flashbang and it is enabled in config
@@ -239,10 +264,10 @@ namespace ShootingInteractions {
                         flashGrenade.FuseTime = 0.1f;
 
                     // Spawn the flashbang to the position of the pickup with the player as the owner and activate it
-                    flashGrenade.SpawnActive(pickup.Position, args.Player);
+                    flashGrenade.SpawnActive(grenadePickup.Position, args.Player);
 
                     // Destroy the pickup
-                    Object.Destroy(pickup.gameObject);
+                    Object.Destroy(grenadePickup.gameObject);
                 }
 
                 // If the grenade isn't enabled in the config, destroy the newly created grenade
