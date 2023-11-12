@@ -10,7 +10,7 @@ namespace ShootingInteractions.Configs {
         [Description("Indicates whether the plugin's debug logs are enabled or not")]
         public bool Debug { get; set; } = false;
 
-        [Description("Takes into account where the bullet actually lands instead of where the user is looking.")]
+        [Description("Takes into account where the bullet actually lands instead of where the user is looking")]
         public bool AccurateBullets { get; set; } = false;
 
         [Description("Normal doors buttons")]
