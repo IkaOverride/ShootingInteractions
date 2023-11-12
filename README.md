@@ -27,6 +27,7 @@ Discord : @ika7533
 | elevators | ElevatorInteraction | See ElevatorInteraction config | Elevators buttons
 | frag_grenades | TimedProjectileInteraction | See TimedProjectileInteraction config | Frag grenades
 | flashbangs | TimedProjectileInteraction | See TimedProjectileInteraction config | Flashbangs
+| custom_grenades | ProjectileInteraction | See ProjectileInteraction config | Custom grenades
 | scp2176 | ProjectileInteraction | See ProjectileInteraction config | SCP-2176
 
 # DoorInteraction Config
