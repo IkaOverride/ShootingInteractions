@@ -10,6 +10,9 @@ namespace ShootingInteractions.Configs {
         [Description("Indicates whether the plugin's debug logs are enabled or not")]
         public bool Debug { get; set; } = false;
 
+        [Description("Takes into account where the bullet actually lands instead of where the user is looking.")]
+        public bool AccurateBullets { get; set; } = false;
+
         [Description("Normal doors buttons")]
         public DoorInteraction Doors { get; set; } = new();
 
@@ -19,8 +22,11 @@ namespace ShootingInteractions.Configs {
         [Description("Gates buttons")]
         public DoorInteraction Gates { get; set; } = new();
 
-        [Description("Bulletproof lockers keycard readers")]
-        public LockerInteraction BulletproofLockers { get; set; } = new();
+        [Description("Weapon lockers")]
+        public LockerInteraction WeaponLockers { get; set; } = new();
+
+        [Description("Bulletproof lockers")]
+        public BulletproofLockerInteraction BulletproofLockers { get; set; } = new();
 
         [Description("Elevators buttons")]
         public ElevatorInteraction Elevators { get; set; } = new();
@@ -31,7 +37,7 @@ namespace ShootingInteractions.Configs {
         [Description("Flashbangs")]
         public TimedProjectileInteraction Flashbangs { get; set; } = new();
 
-        [Description("Custom Grenades")]
+        [Description("Custom grenades")]
         public ProjectileInteraction CustomGrenades { get; set; } = new();
 
         [Description("SCP-2176")]

@@ -99,6 +99,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Configs\BulletproofLockerInteraction.cs" />
     <Compile Include="Configs\Config.cs" />
     <Compile Include="Configs\ElevatorInteraction.cs" />
     <Compile Include="Configs\LockerInteraction.cs" />
