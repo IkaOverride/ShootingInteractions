@@ -13,7 +13,7 @@ namespace ShootingInteractions.Configs {
         [Description("Grenade's fuse time when malfunction occurs")]
         public float MalfunctionFuseTime { get; set; } = 0;
 
-        [Description("Should additional velocity get added to the grenade to make it move")]
+        [Description("Should the grenade get additional velocity to where the player is facing")]
         public bool AdditionalVelocity { get; set; } = false;
 
         [Description("The force of the velocity that gets added")]
