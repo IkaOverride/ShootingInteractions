@@ -19,6 +19,10 @@ using CheckpointDoor = Exiled.API.Features.Doors.CheckpointDoor;
 using ElevatorDoor = Interactables.Interobjects.ElevatorDoor;
 using Scp2176Projectile = InventorySystem.Items.ThrowableProjectiles.Scp2176Projectile;
 using Exiled.CustomItems.API.Features;
+using InventorySystem.Items.Pickups;
+using InventorySystem.Items;
+using InventorySystem;
+using Mirror;
 
 namespace ShootingInteractions {
 
@@ -27,41 +31,21 @@ namespace ShootingInteractions {
         /// <summary>
         /// The plugin's config
         /// </summary>
-        private static readonly Config Config = ShootingInteractions.Instance.Config;
+        private static readonly Config Config = Plugin.Instance.Config;
 
         /// <summary>
         /// A list of gameobjects that cannot be interacted with.
         /// </summary>
-        public List<GameObject> InteractedObjects = new();
-
-        /// <summary>
-        /// The shooting event. Used for inaccurate shooting interaction.
-        /// </summary>
-        /// <param name="args">The <see cref="ShootingEventArgs"/>.</param>
-        public void OnShooting(ShootingEventArgs args) {            
-            // Return if accurate bullets are enabled
-            if (Config.AccurateBullets)
-                return;
-
-            // Check what's the player shooting at with a raycast, and return if the raycast doesn't hit something within 70 distance (maximum realistic distance)
-            if (!Physics.Raycast(args.Player.CameraTransform.position, args.Player.CameraTransform.forward, out RaycastHit raycastHit, 70f, ~(1 << 1 | 1 << 13 | 1 << 16 | 1 << 28)))
-                return;
-
-            // Check the interaction with the player that's shooting, and the GameObject associated to the raycast
-            Interact(args.Player, raycastHit.transform.gameObject);
-        }
+        public static List<GameObject> BlacklistedObjects = new();
 
         /// <summary>
         /// The shot event. Used for accurate shooting interaction.
         /// </summary>
         /// <param name="args">The <see cref="ShotEventArgs"/>.</param>
         public void OnShot(ShotEventArgs args) {
-            // Return if accurate bullets aren't enabled
-            if (!Config.AccurateBullets)
-                return;
 
             // Check what's the player shooting at with a raycast, and return if the raycast doesn't hit something within 70 distance (maximum realistic distance)
-            if (!Physics.Raycast(args.Player.CameraTransform.position, (args.RaycastHit.point - args.Player.CameraTransform.position).normalized, out RaycastHit raycastHit, 70f, ~(1 << 1 | 1 << 13 | 1 << 16 | 1 << 28)))
+            if (!Physics.Raycast(args.Player.CameraTransform.position, Config.AccurateBullets ? (args.RaycastHit.point - args.Player.CameraTransform.position).normalized : args.Player.CameraTransform.forward, out RaycastHit raycastHit, 70f, ~(1 << 1 | 1 << 13 | 1 << 16 | 1 << 28)))
                 return;
 
             // Check the interaction with the player that's shooting, and the GameObject associated to the raycast
@@ -73,88 +57,68 @@ namespace ShootingInteractions {
         /// </summary>
         /// <param name="player">The <see cref="Player"/> that's doing the interaction</param>
         /// <param name="gameObject">The <see cref="GameObject"/></param>
-        public void Interact(Player player, GameObject gameObject) {
+        public static void Interact(Player player, GameObject gameObject) {
 
-            // If the GameObject cannot be interacted with, return
-            if (InteractedObjects.Contains(gameObject))
+            // Return if the GameObject is in the blacklist
+            if (BlacklistedObjects.Contains(gameObject))
                 return;
 
-            // Add the the GameObject to the interacted objects list, this is done to prevent players interacting multiple times with the same object in a short amount of time
-            InteractedObjects.Add(gameObject);
+            // Add the GameObject in the blacklist for a server tick
+            BlacklistedObjects.Add(gameObject);
+            Timing.CallDelayed(0.02f, () => BlacklistedObjects.Remove(gameObject));
 
-            // Remove the GameObject from the refused interaction list after 0.02 seconds (a frame)
-            Timing.CallDelayed(0.02f, () => InteractedObjects.Remove(gameObject));
-
-            // Doors (If there's a RegularDoorButton in the GameObject)
+            // Doors
             if (gameObject.GetComponentInParent<RegularDoorButton>() is RegularDoorButton button) {
 
                 // Get the door associated to the button
                 Door door = Door.Get(button.GetComponentInParent<DoorVariant>());
 
-                // Return if there's no door associated to the button
-                if (door is null)
+                // Return if there's no door associated to the button, the door is moving, if it's locked and the player doesn't have bypass mode, or if it's an open checkpoint
+                if (door is null || door.IsMoving || (door.IsLocked && !player.IsBypassModeEnabled) || (door.IsCheckpoint && door.IsOpen))
                     return;
 
-                // Return if the door is moving, if it's locked and the player doesn't have bypass mode, or if it's an open checkpoint
-                if (door.IsMoving || (door.IsLocked && !player.IsBypassModeEnabled) || (door.IsCheckpoint && door.IsOpen))
-                    return;
-
-                // Cooldown, to lock only after the animation is done
+                // Set the cooldown and door interaction variables according to the type of door
                 float cooldown = 0f;
-
-                // The right door interaction according to the door type
                 DoorInteraction doorInteraction = Config.Doors;
-
-                // If the door is a checkpoint door
+                
                 if (door is CheckpointDoor checkpoint) {
-
-                    // Set the cooldown
                     cooldown = checkpoint.Base._openingTime + checkpoint.WaitTime + checkpoint.WarningTime;
-
-                    // Checkpoint interaction
                     doorInteraction = Config.Checkpoints;
                 }
-
-                // If the door is a basic door
                 else if (door is BasicDoor basicDoor) {
 
                     // Return if the door is doing its animation
                     if (basicDoor.RemainingCooldown >= 0.1f)
                         return;
 
-                    // Set the cooldown
                     cooldown = basicDoor.Cooldown - 0.35f;
 
-                    // If the door is a gate
                     if (door.IsGate) {
 
-                        // Remove some time to the cooldown if the door is a closed gate (Gate takes less time to open in this case)
+                        // A gate takes less time to open than close
                         if (!door.IsOpen)
                             cooldown -= 0.35f;
 
-                        // Gate interaction
                         doorInteraction = Config.Gates;
                     }
                 }
 
-                // Return if the door interaction isn't enabled
+                // Return if the interaction isn't enabled
                 if (!doorInteraction.IsEnabled)
                     return;
 
-                // Should the buttons break ? (Generate number 1 to 100 -> Check if lesser than config percentage)
+                // Should the buttons break ? (Generate number from 1 to 100 then check if lesser than interaction percentage)
                 bool doorBreak = Random.Range(1, 101) <= doorInteraction.ButtonsBreakChance;
 
-                // If the door isn't locked, the buttons should break, and should break before moving
+                // Lock the door if the door isn't locked and the buttons should break BEFORE moving, then unlock after the time indicated in the config, if it's greater than 0
                 if (!door.IsLocked && doorBreak && !doorInteraction.MoveBeforeBreaking) {
 
-                    // Lock the door
                     door.ChangeLock(DoorLockType.SpecialDoorFeature);
 
-                    // Unlock the door after the time indicated in the config, if it's greater than 0
-                    if (doorInteraction.ButtonsBreakTime > 0f)
+                    if (doorInteraction.ButtonsBreakTime > 0)
                         Timing.CallDelayed(doorInteraction.ButtonsBreakTime, () => door.ChangeLock(DoorLockType.None));
 
-                    // Return if the player doesn't have bypass mode enabled
+                    // Don't interact with the door if the player doesn't have bypass mode enabled
                     if (!player.IsBypassModeEnabled)
                         return;
                 }
@@ -168,37 +132,36 @@ namespace ShootingInteractions {
                 // Open or close the door
                 door.IsOpen = !door.IsOpen;
 
-                // If the buttons should break and should break after moving
+                // Lock the door if the door isn't locked and the buttons should break AFTER moving, then unlock after the time indicated in the config, if it's greater than 0
                 if (!door.IsLocked && doorBreak && doorInteraction.MoveBeforeBreaking)
                     Timing.CallDelayed(cooldown, () => {
 
-                        // Lock the door
                         door.ChangeLock(DoorLockType.SpecialDoorFeature);
 
-                        // Unlock the buttons after the time indicated in the config, if it's greater than 0
-                        if (doorInteraction.ButtonsBreakTime > 0f)
+                        if (doorInteraction.ButtonsBreakTime > 0)
                             Timing.CallDelayed(doorInteraction.ButtonsBreakTime, () => door.ChangeLock(DoorLockType.None));
                     });
             }
 
-            // Lockers (If there's a Locker in the GameObject)
+            // Lockers
             else if (gameObject.GetComponentInParent<Locker>() is Locker locker && gameObject.GetComponentInParent<LockerChamber>() is LockerChamber chamber) {
-                // The right remote keycard config according to the locker type
+
+                // The right remote keycard interaction config according to the locker type
                 bool remoteKeycard;
 
-                // If it's a bulletproof locker and the interaction is enabled, set bulletproof lockers remote keycard
+                // Bulletproof locker
                 if (((gameObject.name == "Collider Keypad") || (gameObject.name == "Collider Door" && !Config.BulletproofLockers.OnlyKeypad)) && Config.BulletproofLockers.IsEnabled)
                     remoteKeycard = Config.BulletproofLockers.RemoteKeycard;
 
-                // Else if it's a weapon locker and the interaction is enabled, set weapon lockers remote keycard
+                // Weapon locker
                 else if (gameObject.name == "Door" && Config.WeaponLockers.IsEnabled)
                     remoteKeycard = Config.WeaponLockers.RemoteKeycard;
 
-                // Else, the interaction specific locker interaction isn't enabled, return
+                // Else, the specific locker interaction isn't enabled, return
                 else
                     return;
 
-                // Return if the chamber doesn't allow interaction
+                // Return if the locker doesn't allow interaction
                 if (!chamber.CanInteract)
                     return;
 
@@ -208,132 +171,125 @@ namespace ShootingInteractions {
                     return;
                 }
 
-                // Open the locker chamber
+                // Open the locker
                 chamber.SetDoor(!chamber.IsOpen, locker._grantedBeep);
-
-                // Refresh opened syncvar
                 locker.RefreshOpenedSyncvar();
             }
 
-            // Elevators (If there's an ElevatorPanel in the GameObject)
+            // Elevators
             else if (gameObject.GetComponentInParent<ElevatorPanel>() is ElevatorPanel panel && Config.Elevators.IsEnabled) {
 
                 // Get the elevator associated to the button
                 Lift elevator = Lift.Get(panel.AssignedChamber);
 
-                // Return if there's no elevator associated to the button
-                if (elevator is null)
+                // Return if there's no elevator associated to the button, it's moving, it's locked and the player doesn't have bypass mode enabled, or it can't get its doors
+                if (elevator is null || elevator.IsMoving || !elevator.IsOperative || (elevator.IsLocked && !player.IsBypassModeEnabled) || !ElevatorDoor.AllElevatorDoors.TryGetValue(panel.AssignedChamber.AssignedGroup, out List<ElevatorDoor> list))
                     return;
 
-                // Return if there elevator is moving, if it's locked and the player doesn't have bypass mode enabled, or if it can't get a list of all elevator doors associated to the elevator
-                if (elevator.IsMoving || !elevator.IsOperative || (elevator.IsLocked && !player.IsBypassModeEnabled) || !ElevatorDoor.AllElevatorDoors.TryGetValue(panel.AssignedChamber.AssignedGroup, out List<ElevatorDoor> list))
-                    return;
-
-                // Should the buttons break ? (Generate number 1 to 100 -> Check if lesser than config percentage)
+                // Should the buttons break ? (Generate a number from 1 to 100 then check if it's lesser than config percentage)
                 bool elevatorBreak = Random.Range(1, 101) <= Config.Elevators.ButtonsBreakChance;
 
-                // If the elevator isn't lock, the buttons should break, and should break before moving
+                // Lock the elevator if the door isn't locked and the buttons should break BEFORE moving, then unlock after the time indicated in the config if it's greater than 0
                 if (!elevator.IsLocked && elevatorBreak && !Config.Elevators.MoveBeforeBreaking) {
 
-                    // Lock the elevator doors
                     foreach (ElevatorDoor door in list) {
                         door.ServerChangeLock(DoorLockReason.SpecialDoorFeature, true);
                         elevator.Base.RefreshLocks(elevator.Group, door);
                     }
 
-                    // Unlock the buttons after the time indicated in the config, if it's greater than 0
-                    if (Config.Elevators.ButtonsBreakTime > 0f)
+                    if (Config.Elevators.ButtonsBreakTime > 0)
                         Timing.CallDelayed(Config.Elevators.ButtonsBreakTime, () => elevator.ChangeLock(DoorLockReason.None));
 
-                    // Return if the player doesn't have bypass mode enabled
+                    // Don't interact with the elevator if the player doesn't have bypass mode enabled
                     if (!player.IsBypassModeEnabled)
                         return;
                 }
 
-                // Compute the next level for the elevator
+                // Move the elevator to the next level
                 int nextLevel = panel.AssignedChamber.CurrentLevel + 1;
                 if (nextLevel >= list.Count)
                     nextLevel = 0;
 
-                // Move the elevator to the next level
                 elevator.TryStart(nextLevel);
 
-                // If the buttons should break and should break after moving
+                // Lock the door if the door isn't locked and the buttons should break AFTER moving, then unlock after the time indicated in the config, if it's greater than 0
                 if (!elevator.IsLocked && elevatorBreak && Config.Elevators.MoveBeforeBreaking) {
 
-                    // Lock the elevator doors
                     foreach (ElevatorDoor door in list) {
                         door.ServerChangeLock(DoorLockReason.SpecialDoorFeature, true);
                         elevator.Base.RefreshLocks(elevator.Group, door);
                     }
 
-                    // Unlock the buttons after the time indicated in the config, if it's greater than 0
-                    if (Config.Elevators.ButtonsBreakTime > 0f)
-                        Timing.CallDelayed(Config.Elevators.ButtonsBreakTime + (elevator.AnimationTime + elevator.Base._rotationTime + elevator.Base._doorOpenTime + elevator.Base._doorCloseTime), () => elevator.ChangeLock(DoorLockReason.None));
+                    if (Config.Elevators.ButtonsBreakTime > 0)
+                        Timing.CallDelayed(Config.Elevators.ButtonsBreakTime + elevator.MoveTime, () => elevator.ChangeLock(DoorLockReason.None));
                 }
             }
 
-            // Grenades (If there's a TimedGrenadePickup in the GameObject)
+            // Grenades
             else if (gameObject.GetComponentInParent<TimedGrenadePickup>() is TimedGrenadePickup grenadePickup) {
 
-                // Get the exiled pickup associated to the basegame pickup
-                Pickup pickup = Pickup.Get(grenadePickup);
-
                 // Custom grenades
-                if (CustomItem.TryGet(pickup, out CustomItem customItem)) {
+                if (CustomItem.TryGet(Pickup.Get(grenadePickup), out CustomItem customItem)) {
 
                     // Return if custom grenades aren't enabled
                     if (!Config.CustomGrenades.IsEnabled)
                         return;
 
-                    // Set the attacker to the player shooting
+                    // Set the attacker to the player shooting and explode the custom grenade
                     grenadePickup._attacker = player.Footprint;
-
-                    // Explode the custom grenade
                     grenadePickup._replaceNextFrame = true;
                 }
 
-                // Normal grenades
                 else {
+                    TimedProjectileInteraction grenadeInteraction = grenadePickup.Info.ItemId switch {
+                        ItemType.GrenadeHE => Config.FragGrenades,
+                        ItemType.GrenadeFlash => Config.Flashbangs,
+                        _ => new TimedProjectileInteraction() { IsEnabled = false }
+                    };
 
-                    // Create a new grenade
-                    Item item = Item.Create(pickup.Info.ItemId);
+                    if (!grenadeInteraction.IsEnabled || !InventoryItemLoader.AvailableItems.TryGetValue(grenadePickup.Info.ItemId, out ItemBase grenadeBase))
+                        return;
 
-                    // If the grenade is a frag grenade and it is enabled in the config
-                    if (item is ExplosiveGrenade explosiveGrenade && Config.FragGrenades.IsEnabled) {
+                    // Get the grenade as a throwable and return if it's null
+                    if (grenadeBase is not ThrowableItem grenadeThrowable)
+                        return;
 
-                        // Explode the frag grenade instantly if it is set in the config
-                        if (Config.FragGrenades.ExplodeInstantly)
-                            explosiveGrenade.FuseTime = 0.1f;
+                    // Instantiate the projectile
+                    ThrownProjectile grenadeProjectile = Object.Instantiate(grenadeThrowable.Projectile);
 
-                        // Spawn the frag grenade to the position of the pickup with the player as the owner and activate it
-                        explosiveGrenade.SpawnActive(grenadePickup.Position, player);
-
-                        // Destroy the pickup
-                        Object.Destroy(grenadePickup.gameObject);
+                    // Set the physics of the projectile
+                    PickupStandardPhysics grenadeProjectilePhysics = grenadeProjectile.PhysicsModule as PickupStandardPhysics;
+                    PickupStandardPhysics grenadePickupPhysics = grenadePickup.PhysicsModule as PickupStandardPhysics;
+                    if (grenadeProjectilePhysics is not null && grenadePickupPhysics is not null) {
+                        Rigidbody grenadeProjectileRigidbody = grenadeProjectilePhysics.Rb;
+                        Rigidbody grenadePickupRigidbody = grenadePickupPhysics.Rb;
+                        grenadeProjectileRigidbody.position = grenadePickupRigidbody.position;
+                        grenadeProjectileRigidbody.rotation = grenadePickupRigidbody.rotation;
+                        grenadeProjectileRigidbody.velocity = grenadePickupRigidbody.velocity + (player.CameraTransform.forward * (grenadeInteraction.AdditionalVelocity ? grenadeInteraction.VelocityForce : 0));
                     }
 
-                    // If the grenade is a flashbang and it is enabled in config
-                    else if (item is FlashGrenade flashGrenade && Config.Flashbangs.IsEnabled) {
+                    // Lock the grenade pickup
+                    grenadePickup.Info.Locked = true;
 
-                        // Explode the flashbang instantly if it is set in the config
-                        if (Config.Flashbangs.ExplodeInstantly)
-                            flashGrenade.FuseTime = 0.1f;
+                    // Set the network info and owner of the projectile
+                    grenadeProjectile.NetworkInfo = grenadePickup.Info;
+                    grenadeProjectile.PreviousOwner = grenadePickup._attacker;
 
-                        // Spawn the flashbang to the position of the pickup with the player as the owner and activate it
-                        flashGrenade.SpawnActive(grenadePickup.Position, player);
+                    // Spawn the grenade projectile
+                    NetworkServer.Spawn(grenadeProjectile.gameObject);
 
-                        // Destroy the pickup
-                        Object.Destroy(grenadePickup.gameObject);
-                    }
+                    // Should the grenade have a malfunction ? (Generate number from 1 to 100 then check if lesser than interaction percentage)
+                    // Set the fuse time of the grenade projectile to the interaction fuse time if it should malfunction
+                    if (Random.Range(1, 101) <= grenadeInteraction.MalfunctionChance)
+                        (grenadeProjectile as TimeGrenade)._fuseTime = grenadeInteraction.MalfunctionFuseTime;
 
-                    // If the grenade isn't enabled in the config, destroy the newly created grenade
-                    else
-                        Object.Destroy(item.Base.gameObject);
+                    // Activate the projectile and destroy the pickup
+                    grenadeProjectile.ServerActivate();
+                    grenadePickup.DestroySelf();
                 }
             }
 
-            // SCP-2176 (If there's a Scp2176Projectile in the GameObject): immediately shatter the SCP-2176
+            // SCP-2176
             else if (gameObject.GetComponentInParent<Scp2176Projectile>() is Scp2176Projectile projectile && Config.Scp2176.IsEnabled)
                 projectile.ServerImmediatelyShatter();
         }

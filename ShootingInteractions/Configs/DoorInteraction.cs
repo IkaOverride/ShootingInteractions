@@ -1,20 +1,22 @@
 ﻿using System.ComponentModel;
 
 namespace ShootingInteractions.Configs {
+
     public class DoorInteraction {
-        [Description("Is the shooting interaction enabled")]
+
+        [Description("Is the interaction enabled")]
         public bool IsEnabled { get; set; } = true;
 
-        [Description("Does the interaction check keycards in the player's inventory")]
+        [Description("Should it check keycards in the player's inventory")]
         public bool RemoteKeycard { get; set; } = false;
 
-        [Description("Percentage of chance for the buttons to break")]        
+        [Description("Percentage of chance for the door to break (0 is disabled)")]
         public byte ButtonsBreakChance { get; set; } = 0;
 
-        [Description("For how long should the buttons stay broken (0 = infinite)")]
+        [Description("For how long should the door stay broken (0 or less is infinite)")]
         public float ButtonsBreakTime { get; set; } = 10;
 
-        [Description("Should the door still move/do its animation if the buttons should break")]
+        [Description("Should the door still move/do its animation before breaking")]
         public bool MoveBeforeBreaking { get; set; } = false;
     }
 }

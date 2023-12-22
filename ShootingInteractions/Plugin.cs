@@ -4,22 +4,22 @@ using System;
 using PlayerEvent = Exiled.Events.Handlers.Player;
 
 namespace ShootingInteractions {
-    public class ShootingInteractions : Plugin<Config> {
-        private static readonly ShootingInteractions Singleton = new();
+    public class Plugin : Plugin<Config> {
+        private static readonly Plugin Singleton = new();
 
         public override string Name => "ShootingInteractions";
 
         public override string Author => "Ika";
 
-        public override Version RequiredExiledVersion => new(8, 3, 5);
+        public override Version RequiredExiledVersion => new(8, 4, 3);
 
-        public override Version Version => new(2, 2, 0);
+        public override Version Version => new(2, 2, 1);
 
         private EventsHandler eventsHandler;
 
-        private ShootingInteractions() { }
+        private Plugin() { }
 
-        public static ShootingInteractions Instance => Singleton;
+        public static Plugin Instance => Singleton;
 
         public override void OnEnabled() {
             RegisterEvents();
@@ -34,12 +34,10 @@ namespace ShootingInteractions {
         public void RegisterEvents() {
             eventsHandler = new EventsHandler();
 
-            PlayerEvent.Shooting += eventsHandler.OnShooting;
             PlayerEvent.Shot += eventsHandler.OnShot;
         }
 
         public void UnregisterEvents() {
-            PlayerEvent.Shooting -= eventsHandler.OnShooting;
             PlayerEvent.Shot -= eventsHandler.OnShot;
 
             eventsHandler = null;
