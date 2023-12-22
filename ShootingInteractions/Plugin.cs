@@ -13,7 +13,7 @@ namespace ShootingInteractions {
 
         public override Version RequiredExiledVersion => new(8, 4, 3);
 
-        public override Version Version => new(2, 2, 1);
+        public override Version Version => new(2, 3, 0);
 
         private EventsHandler eventsHandler;
 
