@@ -11,9 +11,9 @@ namespace ShootingInteractions {
 
         public override string Author => "Ika";
 
-        public override Version RequiredExiledVersion => new(8, 4, 3);
+        public override Version RequiredExiledVersion => new(8, 7, 3);
 
-        public override Version Version => new(2, 3, 0);
+        public override Version Version => new(2, 3, 1);
 
         private EventsHandler eventsHandler;
 

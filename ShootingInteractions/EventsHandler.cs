@@ -247,11 +247,8 @@ namespace ShootingInteractions {
                         _ => new TimedProjectileInteraction() { IsEnabled = false }
                     };
 
-                    if (!grenadeInteraction.IsEnabled || !InventoryItemLoader.AvailableItems.TryGetValue(grenadePickup.Info.ItemId, out ItemBase grenadeBase))
-                        return;
-
-                    // Get the grenade as a throwable and return if it's null
-                    if (grenadeBase is not ThrowableItem grenadeThrowable)
+                    // Return if the interaction isn't enabled, it can't get the grenade base, or it can't get the throwable
+                    if (!grenadeInteraction.IsEnabled || !InventoryItemLoader.AvailableItems.TryGetValue(grenadePickup.Info.ItemId, out ItemBase grenadeBase) || (grenadeBase is not ThrowableItem grenadeThrowable))
                         return;
 
                     // Instantiate the projectile
