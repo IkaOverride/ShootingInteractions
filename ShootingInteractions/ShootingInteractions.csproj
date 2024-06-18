@@ -37,11 +37,11 @@
   <ItemGroup>
     <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Packages\Exiled-8.7.3\Assembly-CSharp-firstpass.dll</HintPath>
+      <HintPath>..\..\..\..\Packages\Exiled-8.9.4\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
     <Reference Include="Mirror, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Packages\Exiled-8.7.3\Mirror.dll</HintPath>
+      <HintPath>..\..\..\..\Packages\Exiled-8.9.4\Mirror.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -53,15 +53,15 @@
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine.AudioModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Packages\Exiled-8.7.3\UnityEngine.AudioModule.dll</HintPath>
+      <HintPath>..\..\..\..\Packages\Exiled-8.9.4\UnityEngine.AudioModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Packages\Exiled-8.7.3\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>..\..\..\..\Packages\Exiled-8.9.4\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.PhysicsModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Packages\Exiled-8.7.3\UnityEngine.PhysicsModule.dll</HintPath>
+      <HintPath>..\..\..\..\Packages\Exiled-8.9.4\UnityEngine.PhysicsModule.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -78,7 +78,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="EXILED">
-      <Version>8.7.3</Version>
+      <Version>8.9.4</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
