@@ -18,11 +18,11 @@ using BasicDoor = Exiled.API.Features.Doors.BasicDoor;
 using CheckpointDoor = Exiled.API.Features.Doors.CheckpointDoor;
 using ElevatorDoor = Interactables.Interobjects.ElevatorDoor;
 using Scp2176Projectile = InventorySystem.Items.ThrowableProjectiles.Scp2176Projectile;
-using Exiled.CustomItems.API.Features;
 using InventorySystem.Items.Pickups;
 using InventorySystem.Items;
 using InventorySystem;
 using Mirror;
+using Exiled.CustomModules.API.Features.CustomItems;
 
 namespace ShootingInteractions
 {
@@ -231,7 +231,7 @@ namespace ShootingInteractions
                     }
 
                     if (Config.Elevators.ButtonsBreakTime > 0)
-                        Timing.CallDelayed(Config.Elevators.ButtonsBreakTime, () => elevator.ChangeLock(DoorLockReason.None));
+                        Timing.CallDelayed(Config.Elevators.ButtonsBreakTime, () => elevator.ChangeLock(DoorLockType.SpecialDoorFeature));
 
                     // Don't interact with the elevator if the player doesn't have bypass mode enabled
                     if (!player.IsBypassModeEnabled)
@@ -255,7 +255,7 @@ namespace ShootingInteractions
                     }
 
                     if (Config.Elevators.ButtonsBreakTime > 0)
-                        Timing.CallDelayed(Config.Elevators.ButtonsBreakTime + elevator.MoveTime, () => elevator.ChangeLock(DoorLockReason.None));
+                        Timing.CallDelayed(Config.Elevators.ButtonsBreakTime + elevator.MoveTime, () => elevator.ChangeLock(DoorLockType.SpecialDoorFeature));
                 }
             }
 
