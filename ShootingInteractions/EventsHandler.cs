@@ -22,7 +22,6 @@ using InventorySystem.Items.Pickups;
 using InventorySystem.Items;
 using InventorySystem;
 using Mirror;
-using Exiled.CustomModules.API.Features.CustomItems;
 
 namespace ShootingInteractions
 {
@@ -90,10 +89,7 @@ namespace ShootingInteractions
 
             // Return if the GameObject is in the blacklist
             if (BlacklistedObjects.Contains(gameObject))
-            {
-                Log.Debug("Player shot on a blacklisted GameObject: " + gameObject.name);
                 return false;
-            }
 
             // Doors
             if (gameObject.GetComponentInParent<RegularDoorButton>() is RegularDoorButton button)
@@ -231,7 +227,14 @@ namespace ShootingInteractions
                     }
 
                     if (Config.Elevators.ButtonsBreakTime > 0)
-                        Timing.CallDelayed(Config.Elevators.ButtonsBreakTime, () => elevator.ChangeLock(DoorLockType.SpecialDoorFeature));
+                        Timing.CallDelayed(Config.Elevators.ButtonsBreakTime + elevator.MoveTime, () =>
+                        {
+                            foreach (ElevatorDoor door in list)
+                            {
+                                door.NetworkActiveLocks = 0;
+                                DoorEvents.TriggerAction(door, DoorAction.Unlocked, null);
+                            }
+                        });
 
                     // Don't interact with the elevator if the player doesn't have bypass mode enabled
                     if (!player.IsBypassModeEnabled)
@@ -255,7 +258,14 @@ namespace ShootingInteractions
                     }
 
                     if (Config.Elevators.ButtonsBreakTime > 0)
-                        Timing.CallDelayed(Config.Elevators.ButtonsBreakTime + elevator.MoveTime, () => elevator.ChangeLock(DoorLockType.SpecialDoorFeature));
+                        Timing.CallDelayed(Config.Elevators.ButtonsBreakTime + elevator.MoveTime, () =>
+                        {
+                            foreach (ElevatorDoor door in list)
+                            {
+                                door.NetworkActiveLocks = 0;
+                                DoorEvents.TriggerAction(door, DoorAction.Unlocked, null);
+                            }
+                        });
                 }
             }
 
@@ -263,7 +273,7 @@ namespace ShootingInteractions
             else if (gameObject.GetComponentInParent<TimedGrenadePickup>() is TimedGrenadePickup grenadePickup)
             {
                 // Custom grenades
-                if (CustomItem.TryGet(Pickup.Get(grenadePickup), out CustomItem customItem))
+                if (Plugin.GetCustomItem is not null && (bool)Plugin.GetCustomItem.Invoke(null, new[] { Pickup.Get(grenadePickup), null }))
                 {
                     // Return if custom grenades aren't enabled
                     if (!Config.CustomGrenades.IsEnabled)
@@ -273,6 +283,8 @@ namespace ShootingInteractions
                     grenadePickup._attacker = player.Footprint;
                     grenadePickup._replaceNextFrame = true;
                 }
+
+                // Normal grenades
                 else
                 {
                     TimedProjectileInteraction grenadeInteraction = grenadePickup.Info.ItemId switch
