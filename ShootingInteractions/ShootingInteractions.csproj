@@ -37,11 +37,11 @@
   <ItemGroup>
     <Reference Include="Assembly-CSharp-firstpass, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Packages\SCP SL 13.5\Assembly-CSharp-firstpass.dll</HintPath>
+      <HintPath>..\..\..\Packages\SCP SL 14\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
     <Reference Include="Mirror, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Packages\SCP SL 13.5\Mirror.dll</HintPath>
+      <HintPath>..\..\..\Packages\SCP SL 14\Mirror.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -53,15 +53,15 @@
     <Reference Include="System.Xml" />
     <Reference Include="UnityEngine.AudioModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Packages\SCP SL 13.5\UnityEngine.AudioModule.dll</HintPath>
+      <HintPath>..\..\..\Packages\SCP SL 14\UnityEngine.AudioModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Packages\SCP SL 13.5\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>..\..\..\Packages\SCP SL 14\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.PhysicsModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Packages\SCP SL 13.5\UnityEngine.PhysicsModule.dll</HintPath>
+      <HintPath>..\..\..\Packages\SCP SL 14\UnityEngine.PhysicsModule.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -77,8 +77,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="EXILEDOFFICIAL">
-      <Version>8.11.0</Version>
+    <PackageReference Include="ExMod.Exiled">
+      <Version>9.0.0-alpha.4</Version>
     </PackageReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

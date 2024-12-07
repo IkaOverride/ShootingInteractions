@@ -37,35 +37,14 @@ namespace ShootingInteractions
         /// </summary>
         public static List<GameObject> BlacklistedObjects = new();
 
-        public void OnShooting(ShootingEventArgs args)
-        {
-            if (Config.AccurateBullets)
-                return;
-
-            // Check what's the player shooting at with a raycast, and return if the raycast doesn't hit something within 70 distance (maximum realistic distance)
-            if (!Physics.Raycast(args.Player.CameraTransform.position, args.Player.CameraTransform.forward, out RaycastHit raycastHit, 70f, ~(1 << 1 | 1 << 13 | 1 << 16 | 1 << 28)))
-                return;
-
-            // Interact and check the interaction with the player that's shooting, and the GameObject associated to the raycast
-            if (Interact(args.Player, raycastHit.transform.gameObject))
-            {
-                // Add the GameObject in the blacklist for a server tick
-                BlacklistedObjects.Add(raycastHit.transform.gameObject);
-                Timing.CallDelayed(0.02f, () => BlacklistedObjects.Remove(raycastHit.transform.gameObject));
-            }
-        }
-
         /// <summary>
         /// The shot event. Used for accurate shooting interaction.
         /// </summary>
         /// <param name="args">The <see cref="ShotEventArgs"/>.</param>
         public void OnShot(ShotEventArgs args)
         {
-            if (!Config.AccurateBullets)
-                return;
-
             // Check what's the player shooting at with a raycast, and return if the raycast doesn't hit something within 70 distance (maximum realistic distance)
-            if (!Physics.Raycast(args.Player.CameraTransform.position, (args.RaycastHit.point - args.Player.CameraTransform.position).normalized, out RaycastHit raycastHit, 70f, ~(1 << 1 | 1 << 13 | 1 << 16 | 1 << 28)))
+            if (!Physics.Raycast(args.Player.CameraTransform.position, Config.AccurateBullets ? (args.RaycastHit.point - args.Player.CameraTransform.position).normalized : args.Player.CameraTransform.forward, out RaycastHit raycastHit, 70f, ~(1 << 1 | 1 << 13 | 1 << 16 | 1 << 28)))
                 return;
 
             // Interact and check the interaction with the player that's shooting, and the GameObject associated to the raycast
@@ -162,7 +141,6 @@ namespace ShootingInteractions
                 if (!door.IsLocked && doorBreak && doorInteraction.MoveBeforeBreaking)
                     Timing.CallDelayed(cooldown, () =>
                     {
-
                         door.ChangeLock(DoorLockType.SpecialDoorFeature);
 
                         if (doorInteraction.ButtonsBreakTime > 0)
@@ -208,10 +186,10 @@ namespace ShootingInteractions
             else if (gameObject.GetComponentInParent<ElevatorPanel>() is ElevatorPanel panel && Config.Elevators.IsEnabled)
             {
                 // Get the elevator associated to the button
-                Lift elevator = Lift.Get(panel.AssignedChamber);
+                Lift elevator = Lift.Get(panel._assignedChamber);
 
                 // Return if there's no elevator associated to the button, it's moving, it's locked and the player doesn't have bypass mode enabled, or it can't get its doors
-                if (elevator is null || elevator.IsMoving || !elevator.IsOperative || (elevator.IsLocked && !player.IsBypassModeEnabled) || !ElevatorDoor.AllElevatorDoors.TryGetValue(panel.AssignedChamber.AssignedGroup, out List<ElevatorDoor> list))
+                if (elevator is null || elevator.IsMoving || !elevator.IsOperative || (elevator.IsLocked && !player.IsBypassModeEnabled) || !ElevatorDoor.AllElevatorDoors.TryGetValue(panel._assignedChamber.AssignedGroup, out List<ElevatorDoor> list))
                     return true;
 
                 // Should the buttons break ? (Generate a number from 1 to 100 then check if it's lesser than config percentage)
@@ -221,13 +199,10 @@ namespace ShootingInteractions
                 if (!elevator.IsLocked && elevatorBreak && !Config.Elevators.MoveBeforeBreaking)
                 {
                     foreach (ElevatorDoor door in list)
-                    {
                         door.ServerChangeLock(DoorLockReason.SpecialDoorFeature, true);
-                        elevator.Base.RefreshLocks(elevator.Group, door);
-                    }
 
                     if (Config.Elevators.ButtonsBreakTime > 0)
-                        Timing.CallDelayed(Config.Elevators.ButtonsBreakTime + elevator.MoveTime, () =>
+                        Timing.CallDelayed(Config.Elevators.ButtonsBreakTime, () =>
                         {
                             foreach (ElevatorDoor door in list)
                             {
@@ -242,7 +217,7 @@ namespace ShootingInteractions
                 }
 
                 // Move the elevator to the next level
-                int nextLevel = panel.AssignedChamber.CurrentLevel + 1;
+                int nextLevel = panel._assignedChamber.DestinationLevel + 1;
                 if (nextLevel >= list.Count)
                     nextLevel = 0;
 
@@ -252,10 +227,7 @@ namespace ShootingInteractions
                 if (!elevator.IsLocked && elevatorBreak && Config.Elevators.MoveBeforeBreaking)
                 {
                     foreach (ElevatorDoor door in list)
-                    {
                         door.ServerChangeLock(DoorLockReason.SpecialDoorFeature, true);
-                        elevator.Base.RefreshLocks(elevator.Group, door);
-                    }
 
                     if (Config.Elevators.ButtonsBreakTime > 0)
                         Timing.CallDelayed(Config.Elevators.ButtonsBreakTime + elevator.MoveTime, () =>

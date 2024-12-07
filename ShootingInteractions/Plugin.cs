@@ -17,9 +17,9 @@ namespace ShootingInteractions {
 
         public override string Author => "Ika";
 
-        public override Version RequiredExiledVersion => new(8, 8, 0);
+        public override Version RequiredExiledVersion => new(9, 0, 0);
 
-        public override Version Version => new(2, 4, 0);
+        public override Version Version => new(2, 4, 1);
 
         public override PluginPriority Priority => PluginPriority.First;
 
@@ -57,12 +57,10 @@ namespace ShootingInteractions {
         public void RegisterEvents() {
             eventsHandler = new EventsHandler();
 
-            PlayerEvent.Shooting += eventsHandler.OnShooting;
             PlayerEvent.Shot += eventsHandler.OnShot;
         }
 
         public void UnregisterEvents() {
-            PlayerEvent.Shooting -= eventsHandler.OnShooting;
             PlayerEvent.Shot -= eventsHandler.OnShot;
 
             eventsHandler = null;
