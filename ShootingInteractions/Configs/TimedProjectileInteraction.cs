@@ -1,16 +1,16 @@
 ﻿using System.ComponentModel;
 
-namespace ShootingInteractions.Configs {
-
-    public class TimedProjectileInteraction {
-
+namespace ShootingInteractions.Configs
+{
+    public class TimedProjectileInteraction
+    {
         [Description("Is the interaction enabled")]
         public bool IsEnabled { get; set; } = true;
 
-        [Description("Percentage of chance for the grenade to malfunction (0 is disabled)")]
+        [Description("Chance for the grenade to have a custom fuse time (0 = disabled | 100 = always)")]
         public byte MalfunctionChance { get; set; } = 0;
 
-        [Description("Grenade's fuse time when malfunction occurs")]
+        [Description("Grenade's custom fuse time (in seconds)")]
         public float MalfunctionFuseTime { get; set; } = 0;
 
         [Description("Should the grenade get additional velocity to where the player is facing")]

@@ -1,9 +1,9 @@
 ﻿using System.ComponentModel;
 
-namespace ShootingInteractions.Configs {
-
-    public class BulletproofLockerInteraction {
-
+namespace ShootingInteractions.Configs
+{
+    public class BulletproofLockerInteraction
+    {
         [Description("Is the interaction enabled")]
         public bool IsEnabled { get; set; } = true;
 
