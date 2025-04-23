@@ -19,9 +19,9 @@ namespace ShootingInteractions
 
         public override string Author => "Ika";
 
-        public override Version RequiredExiledVersion => new(9, 0, 0);
+        public override Version RequiredExiledVersion => new(9, 6, 0);
 
-        public override Version Version => new(2, 4, 2);
+        public override Version Version => new(2, 4, 4);
 
         public override PluginPriority Priority => PluginPriority.First;
 

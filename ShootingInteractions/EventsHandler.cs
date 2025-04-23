@@ -84,7 +84,7 @@ namespace ShootingInteractions
 
                 if (door is CheckpointDoor checkpoint)
                 {
-                    cooldown = checkpoint.Base._openingTime + checkpoint.WaitTime + checkpoint.WarningTime;
+                    cooldown = checkpoint.Base.OpeningTime + checkpoint.WaitTime + checkpoint.WarningTime;
                     interactionConfig = Config.Checkpoints;
                 }
                 else if (door is BasicDoor interactableDoor)
@@ -190,18 +190,18 @@ namespace ShootingInteractions
             else if (gameObject.GetComponentInParent<ElevatorPanel>() is ElevatorPanel panel && Config.Elevators.IsEnabled)
             {
                 // Return if the panel has no chamber
-                if (panel._assignedChamber is null)
+                if (panel.AssignedChamber is null)
                     return true;
 
                 // Get the elevator associated to the button
-                Lift elevator = Lift.Get(panel._assignedChamber);
+                Lift elevator = Lift.Get(panel.AssignedChamber);
 
                 // Return if:
                 //  - elevator can't be found
                 //  - elevator is moving
                 //  - elevator is locked and bypass mode is disabled
                 //  - no elevator doors
-                if (elevator is null || elevator.IsMoving || !elevator.IsOperative || (elevator.IsLocked && !player.IsBypassModeEnabled) || !ElevatorDoor.AllElevatorDoors.TryGetValue(panel._assignedChamber.AssignedGroup, out List<ElevatorDoor> list))
+                if (elevator is null || elevator.IsMoving || !elevator.IsOperative || (elevator.IsLocked && !player.IsBypassModeEnabled) || !ElevatorDoor.AllElevatorDoors.TryGetValue(panel.AssignedChamber.AssignedGroup, out List<ElevatorDoor> list))
                     return true;
 
                 // Should the elevator get locked ? (Generate a number from 1 to 100 then check if it's lesser than config percentage)
@@ -230,7 +230,7 @@ namespace ShootingInteractions
                 }
 
                 // Move the elevator to the next level
-                elevator.TryStart(panel._assignedChamber.NextLevel);
+                elevator.TryStart(panel.AssignedChamber.NextLevel);
 
                 // Lock the door if it should be locked AFTER moving
                 if (shoudLock && Config.Elevators.MoveBeforeBreaking)
@@ -312,7 +312,7 @@ namespace ShootingInteractions
                     if (Random.Range(1, 101) <= grenadeInteraction.MalfunctionChance)
 
                         // Set the custom fuse time
-                        (grenadeProjectile as TimeGrenade)._fuseTime = Mathf.Max(Time.smoothDeltaTime, grenadeInteraction.MalfunctionFuseTime);
+                        (grenadeProjectile as TimeGrenade)._fuseTime = Mathf.Max(Time.smoothDeltaTime * 2, grenadeInteraction.MalfunctionFuseTime);
 
                     // Activate the projectile and destroy the pickup
                     grenadeProjectile.ServerActivate();
