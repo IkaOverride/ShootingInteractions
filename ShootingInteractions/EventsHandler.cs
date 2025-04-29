@@ -12,7 +12,6 @@ using ShootingInteractions.Configs;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using DoorBeepType = Exiled.API.Enums.DoorBeepType;
 using DoorLockType = Exiled.API.Enums.DoorLockType;
 using BasicDoor = Exiled.API.Features.Doors.BasicDoor;
 using CheckpointDoor = Exiled.API.Features.Doors.CheckpointDoor;
@@ -22,6 +21,7 @@ using InventorySystem.Items.Pickups;
 using InventorySystem.Items;
 using InventorySystem;
 using Mirror;
+using Interactables.Interobjects.DoorButtons;
 
 namespace ShootingInteractions
 {
@@ -65,17 +65,19 @@ namespace ShootingInteractions
         public static bool Interact(Player player, GameObject gameObject)
         {
             // Doors
-            if (gameObject.GetComponentInParent<RegularDoorButton>() is RegularDoorButton button)
+            if (gameObject.GetComponentInParent<BasicDoorButton>() is BasicDoorButton button)
             {
                 // Get the door associated to the button
                 Door door = Door.Get(button.GetComponentInParent<DoorVariant>());
+
+                Log.Info(door.Base._remainingDeniedCooldown);
 
                 // Return if:
                 //  - door can't be found
                 //  - door is moving
                 //  - door is locked, and bypass mode is disabled
                 //  - it's an open checkpoint
-                if (door is null || door.IsMoving || (door.IsLocked && !player.IsBypassModeEnabled) || (door.IsCheckpoint && door.IsOpen))
+                if (door is null || door.IsMoving || (door.IsLocked && !player.IsBypassModeEnabled) || (door.IsCheckpoint && door.IsOpen) || door.Base._remainingDeniedCooldown > 0f)
                     return true;
 
                 // Get the door cooldown (used to lock the door AFTER it moved) and the config depending on the door type
@@ -84,7 +86,7 @@ namespace ShootingInteractions
 
                 if (door is CheckpointDoor checkpoint)
                 {
-                    cooldown = checkpoint.Base.OpeningTime + checkpoint.WaitTime + checkpoint.WarningTime;
+                    cooldown = checkpoint.WaitTime + checkpoint.WarningTime;
                     interactionConfig = Config.Checkpoints;
                 }
                 else if (door is BasicDoor interactableDoor)
@@ -127,9 +129,9 @@ namespace ShootingInteractions
                 }
 
                 // Deny access if the door is a keycard door, bypass mode is disabled, and either: remote keycard is disabled OR the player has no keycard that open the door
-                if (door.IsKeycardDoor && !player.IsBypassModeEnabled && (!interactionConfig.RemoteKeycard || !player.Items.Any(item => item is Keycard keycard && (keycard.Base.Permissions & door.RequiredPermissions.RequiredPermissions) != 0)))
+                if (door.IsKeycardDoor && !player.IsBypassModeEnabled && (!interactionConfig.RemoteKeycard || !player.Items.Any(item => item is Keycard keycard && ((DoorPermissionFlags)keycard.Permissions & door.RequiredPermissions) != 0)))
                 {
-                    door.PlaySound(DoorBeepType.PermissionDenied);
+                    door.Base.PermissionsDenied(null, 0);
                     return true;
                 }
 
@@ -173,9 +175,9 @@ namespace ShootingInteractions
                     return true;
 
                 // Deny access if bypass mode is disabled and either: remote keycard is disabled OR the player has no keycard that open the locker
-                if (!player.IsBypassModeEnabled && (!remoteKeycard || !player.Items.Any(item => item is Keycard keycard && keycard.Base.Permissions.HasFlag(chamber.RequiredPermissions))))
+                if (!player.IsBypassModeEnabled && (!remoteKeycard || !player.Items.Any(item => item is Keycard keycard && ((DoorPermissionFlags)keycard.Permissions).HasFlag(chamber.RequiredPermissions))))
                 {
-                    locker.RpcPlayDenied((byte) locker.Chambers.ToList().IndexOf(chamber));
+                    locker.RpcPlayDenied((byte) locker.Chambers.ToList().IndexOf(chamber), chamber.RequiredPermissions);
                     return true;
                 }
 
