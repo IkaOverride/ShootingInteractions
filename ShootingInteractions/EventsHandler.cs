@@ -70,14 +70,12 @@ namespace ShootingInteractions
                 // Get the door associated to the button
                 Door door = Door.Get(button.GetComponentInParent<DoorVariant>());
 
-                Log.Info(door.Base._remainingDeniedCooldown);
-
                 // Return if:
                 //  - door can't be found
                 //  - door is moving
                 //  - door is locked, and bypass mode is disabled
                 //  - it's an open checkpoint
-                if (door is null || door.IsMoving || (door.IsLocked && !player.IsBypassModeEnabled) || (door.IsCheckpoint && door.IsOpen) || door.Base._remainingDeniedCooldown > 0f)
+                if (door is null || door.IsMoving || (door.IsLocked && !player.IsBypassModeEnabled) || (door.IsCheckpoint && door.IsOpen))
                     return true;
 
                 // Get the door cooldown (used to lock the door AFTER it moved) and the config depending on the door type
@@ -86,7 +84,7 @@ namespace ShootingInteractions
 
                 if (door is CheckpointDoor checkpoint)
                 {
-                    cooldown = checkpoint.WaitTime + checkpoint.WarningTime;
+                    cooldown = 0.6f + checkpoint.WaitTime + checkpoint.WarningTime;
                     interactionConfig = Config.Checkpoints;
                 }
                 else if (door is BasicDoor interactableDoor)
@@ -117,7 +115,7 @@ namespace ShootingInteractions
                 // Lock the door if it should be locked BEFORE moving
                 if (shouldLock && !interactionConfig.MoveBeforeBreaking)
                 {
-                    door.ChangeLock(DoorLockType.SpecialDoorFeature);
+                    door.ChangeLock(DoorLockType.Isolation);
 
                     // Unlock the door after the time indicated in the config (if greater than 0)
                     if (interactionConfig.ButtonsBreakTime > 0)
@@ -142,7 +140,7 @@ namespace ShootingInteractions
                 if (shouldLock && interactionConfig.MoveBeforeBreaking)
                     Timing.CallDelayed(cooldown, () =>
                     {
-                        door.ChangeLock(DoorLockType.SpecialDoorFeature);
+                        door.ChangeLock(DoorLockType.Isolation);
 
                         // Unlock the door after the time indicated in the config (if greater than 0)
                         if (interactionConfig.ButtonsBreakTime > 0)
@@ -213,7 +211,7 @@ namespace ShootingInteractions
                 if (shoudLock && !Config.Elevators.MoveBeforeBreaking)
                 {
                     foreach (ElevatorDoor door in list)
-                        door.ServerChangeLock(DoorLockReason.SpecialDoorFeature, true);
+                        door.ServerChangeLock(DoorLockReason.Isolation, true);
 
                     // Unlock the door after the time indicated in the config (if greater than 0)
                     if (Config.Elevators.ButtonsBreakTime > 0)
@@ -238,7 +236,7 @@ namespace ShootingInteractions
                 if (shoudLock && Config.Elevators.MoveBeforeBreaking)
                 {
                     foreach (ElevatorDoor door in list)
-                        door.ServerChangeLock(DoorLockReason.SpecialDoorFeature, true);
+                        door.ServerChangeLock(DoorLockReason.Isolation, true);
 
                     // Unlock the door after the time indicated in the config (if greater than 0)
                     if (Config.Elevators.ButtonsBreakTime > 0)
