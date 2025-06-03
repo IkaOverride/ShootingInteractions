@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace ShootingInteractions.Configs
+namespace ShootingInteractions.Configuration.Bases
 {
     public class ElevatorInteraction
     {
@@ -15,5 +15,8 @@ namespace ShootingInteractions.Configs
 
         [Description("Should the elevator move before getting locked")]
         public bool MoveBeforeBreaking { get; set; } = false;
+
+        [Description("What's the minimum ammo penetration to the interaction occour (0 = disabled)")]
+        public float MinimumPenetration { get; set; } = 0;
     }
 }

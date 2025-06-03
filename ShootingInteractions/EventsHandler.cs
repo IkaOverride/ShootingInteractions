@@ -3,30 +3,26 @@ using Exiled.API.Features.Doors;
 using Exiled.API.Features.Items;
 using Exiled.API.Features.Pickups;
 using Exiled.Events.EventArgs.Player;
-using Interactables.Interobjects.DoorUtils;
 using Interactables.Interobjects;
+using Interactables.Interobjects.DoorButtons;
+using Interactables.Interobjects.DoorUtils;
+using InventorySystem;
+using InventorySystem.Items;
+using InventorySystem.Items.Pickups;
 using InventorySystem.Items.ThrowableProjectiles;
 using MapGeneration.Distributors;
 using MEC;
-using ShootingInteractions.Configs;
+using Mirror;
+using ShootingInteractions.Configuration;
+using ShootingInteractions.Configuration.Bases;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using DoorLockType = Exiled.API.Enums.DoorLockType;
 using BasicDoor = Exiled.API.Features.Doors.BasicDoor;
 using CheckpointDoor = Exiled.API.Features.Doors.CheckpointDoor;
+using DoorLockType = Exiled.API.Enums.DoorLockType;
 using ElevatorDoor = Interactables.Interobjects.ElevatorDoor;
 using Scp2176Projectile = InventorySystem.Items.ThrowableProjectiles.Scp2176Projectile;
-using InventorySystem.Items.Pickups;
-using InventorySystem.Items;
-using InventorySystem;
-using Mirror;
-using Interactables.Interobjects.DoorButtons;
-using System.Diagnostics.Eventing.Reader;
-using Interactables;
-using YamlDotNet.Serialization;
-using Exiled.API.Features.DamageHandlers;
-using PlayerStatsSystem;
 
 namespace ShootingInteractions
 {
@@ -69,14 +65,6 @@ namespace ShootingInteractions
             }
         }
 
-
-        public void OnHurt(HurtEventArgs ev)
-        {
-            PlayerStatsSystem.DamageHandlerBase suicidio = new CustomReasonDamageHandler(":trollface:");
-            DamageHandler damage = new DamageHandler(ev.Player, suicidio);
-            ev.Player.Kill(damage);
-        }
-
         /// <summary>
         /// Interact with the game object.
         /// </summary>
@@ -85,15 +73,15 @@ namespace ShootingInteractions
         /// <returns>If the GameObject was an interactable object.</returns>
         public static bool Interact(Player player, GameObject gameObject, Firearm firearm, Vector3 direction)
         {
-            Log.Info(gameObject.name);
-            Log.Info(gameObject.layer);
-            Log.Info(string.Join(", ", gameObject.GetComponents<Component>().ToList()));
-            Log.Info(string.Join(", ", gameObject.GetComponentsInParent<Component>().ToList()));
-            Log.Info(string.Join(", ", gameObject.GetComponentsInChildren<Component>().ToList()));
-
+            Log.Info(firearm.Penetration);
             // Doors
             if (gameObject.GetComponentInParent<BasicDoorButton>() is BasicDoorButton button)
             {
+                DoorInteraction doorInteractionConfig = Config.Doors;
+
+                if (doorInteractionConfig.MinimumPenetration >= firearm.Penetration)
+                    return true;
+
                 // Get the door associated to the button
                 Door door = Door.Get(button.GetComponentInParent<DoorVariant>());
 
@@ -107,12 +95,11 @@ namespace ShootingInteractions
 
                 // Get the door cooldown (used to lock the door AFTER it moved) and the config depending on the door type
                 float cooldown = 0f;
-                DoorInteraction interactionConfig = Config.Doors;
 
                 if (door is CheckpointDoor checkpoint)
                 {
                     cooldown = 0.6f + checkpoint.WaitTime + checkpoint.WarningTime;
-                    interactionConfig = Config.Checkpoints;
+                    doorInteractionConfig = Config.Checkpoints;
                 }
                 else if (door is BasicDoor interactableDoor)
                 {
@@ -128,25 +115,25 @@ namespace ShootingInteractions
                         if (!door.IsOpen)
                             cooldown -= 0.35f;
 
-                        interactionConfig = Config.Gates;
+                        doorInteractionConfig = Config.Gates;
                     }
                 }
 
                 // Return if the interaction isn't enabled
-                if (!interactionConfig.IsEnabled)
+                if (!doorInteractionConfig.IsEnabled)
                     return true;
 
                 // Should the door get locked ? (Generate number from 1 to 100 then check if lesser than interaction percentage)
-                bool shouldLock = !door.IsLocked && Random.Range(1, 101) <= interactionConfig.ButtonsBreakChance;
+                bool shouldLock = !door.IsLocked && Random.Range(1, 101) <= doorInteractionConfig.LockChance;
 
                 // Lock the door if it should be locked BEFORE moving
-                if (shouldLock && !interactionConfig.MoveBeforeBreaking)
+                if (shouldLock && !doorInteractionConfig.MoveBeforeLocking)
                 {
                     door.ChangeLock(DoorLockType.Isolation);
 
                     // Unlock the door after the time indicated in the config (if greater than 0)
-                    if (interactionConfig.ButtonsBreakTime > 0)
-                        Timing.CallDelayed(interactionConfig.ButtonsBreakTime, () => door.ChangeLock(DoorLockType.None));
+                    if (doorInteractionConfig.LockDuration > 0)
+                        Timing.CallDelayed(doorInteractionConfig.LockDuration, () => door.ChangeLock(DoorLockType.None));
 
                     // Don't interact if bypass mode is disabled
                     if (!player.IsBypassModeEnabled)
@@ -154,7 +141,7 @@ namespace ShootingInteractions
                 }
 
                 // Deny access if the door is a keycard door, bypass mode is disabled, and either: remote keycard is disabled OR the player has no keycard that open the door
-                if (door.IsKeycardDoor && !player.IsBypassModeEnabled && (!interactionConfig.RemoteKeycard || !player.Items.Any(item => item is Keycard keycard && ((DoorPermissionFlags)keycard.Permissions & door.RequiredPermissions) != 0)))
+                if (door.IsKeycardDoor && !player.IsBypassModeEnabled && (!doorInteractionConfig.RemoteKeycard || !player.Items.Any(item => item is Keycard keycard && ((DoorPermissionFlags)keycard.Permissions & door.RequiredPermissions) != 0)))
                 {
                     door.Base.PermissionsDenied(null, 0);
                     return true;
@@ -164,44 +151,53 @@ namespace ShootingInteractions
                 door.IsOpen = !door.IsOpen;
 
                 // Lock the door if it should be locked AFTER moving
-                if (shouldLock && interactionConfig.MoveBeforeBreaking)
+                if (shouldLock && doorInteractionConfig.MoveBeforeLocking)
                     Timing.CallDelayed(cooldown, () =>
                     {
                         door.ChangeLock(DoorLockType.Isolation);
 
                         // Unlock the door after the time indicated in the config (if greater than 0)
-                        if (interactionConfig.ButtonsBreakTime > 0)
-                            Timing.CallDelayed(interactionConfig.ButtonsBreakTime, () => door.ChangeLock(DoorLockType.None));
+                        if (doorInteractionConfig.LockDuration > 0)
+                            Timing.CallDelayed(doorInteractionConfig.LockDuration, () => door.ChangeLock(DoorLockType.None));
                     });
 
                 return true;
             }
 
-            // Lockers (Bulletproof, weapon or Experimental)
+            // Lockers (Pedestal, Weapon, Experimental and SCP-127)
             else if (gameObject.GetComponentInParent<Locker>() is Locker locker)
             {
+                LockerInteraction lockerInteractionConfig = gameObject.name switch
+                {
+                    "Collider Keypad" => Config.Pedestal,
+                    "Collider Door" => Config.Pedestal,
+                    "Door" => Config.WeaponLocker,
+                    "EWL_CenterDoor" => Config.ExperimentalWeaponLocker,
+                    "Collider Lid" => Config.Scp127Container,
+                    "Collider" => Config.RifleRackLocker,
+                    _ => new LockerInteraction() { IsEnabled = false }
+                };
+
                 // The right remote keycard interaction config according to the locker type
                 bool remoteKeycard;
 
-                // Bulletproof locker
-                if (((gameObject.name == "Collider Keypad") || (gameObject.name == "Collider Door" && !Config.BulletproofLockers.OnlyKeypad)) && Config.BulletproofLockers.IsEnabled)
-                    remoteKeycard = Config.BulletproofLockers.RemoteKeycard;
+                // Return if MinimumPenetration isn't reached
+                if (lockerInteractionConfig.MinimumPenetration >= firearm.Penetration)
+                    return true;
 
-                // Weapon locker
-                else if (gameObject.name == "Door" && Config.WeaponLockers.IsEnabled)
-                    remoteKeycard = Config.WeaponLockers.RemoteKeycard;
+                // Return if OnlyKeypad isn't enabled
+                if (lockerInteractionConfig is PedestalsInteraction bulletProofLockerInteractionConfig && gameObject.name == "Collider Door" && bulletProofLockerInteractionConfig.OnlyKeypad)
+                    return true;
 
-                // Experimental weapon locker
-                else if (gameObject.name == "EWL_CenterDoor")
-                    remoteKeycard = true;//Config.ExperimentalWeaponLockers.RemoteKeycard;
-
-                else if (gameObject.name == "Collider Lid") //&& Config.LockerChambers.IsEnabled)
-                    remoteKeycard = true;
+                // Return if the interaction isn't enabled
+                if (lockerInteractionConfig.IsEnabled)
+                    remoteKeycard = lockerInteractionConfig.RemoteKeycard;
 
                 // Else, the specific locker interaction isn't enabled, return
                 else
                     return true;
 
+                // Experimental weapon lockers
                 if (gameObject.GetComponentInParent<ExperimentalWeaponLocker>() is ExperimentalWeaponLocker baseExpLocker)
                 {
                     // Gets the wrapper for the experimental weapon locker
@@ -224,6 +220,7 @@ namespace ShootingInteractions
                     return true;
                 }
 
+                // SCP-127 container, Pedestals and Weapon lockers
                 if (gameObject.GetComponentInParent<LockerChamber>() is LockerChamber chamber)
                 {
                     // Return if the locker doesn't allow interaction
@@ -233,7 +230,7 @@ namespace ShootingInteractions
                     // Deny access if bypass mode is disabled and either: remote keycard is disabled OR the player has no keycard that open the locker
                     if (!player.IsBypassModeEnabled && (!remoteKeycard || !player.Items.Any(item => item is Keycard keycard && ((DoorPermissionFlags)keycard.Permissions).HasFlag(chamber.RequiredPermissions))))
                     {
-                        locker.RpcPlayDenied((byte)locker.Chambers.ToList().IndexOf(chamber), chamber.RequiredPermissions);
+                        locker.RpcPlayDenied(locker.ComponentIndex, chamber.RequiredPermissions);
                         return true;
                     }
 
@@ -243,7 +240,25 @@ namespace ShootingInteractions
                     return true;
                 }
 
+                // Rifle racks
+                if (LabApi.Features.Wrappers.RifleRackLocker.Dictionary.TryGetValue(locker, out LabApi.Features.Wrappers.RifleRackLocker rifleRackLocker))
+                {
+                    // Return if the locker doesn't allow interaction
+                    if (!rifleRackLocker.CanInteract)
+                        return true;
 
+                    // Deny access if bypass mode is disabled and either: remote keycard is disabled OR the player has no keycard that open the locker
+                    if (!player.IsBypassModeEnabled && (!remoteKeycard || !player.Items.Any(item => item is Keycard keycard && ((DoorPermissionFlags)keycard.Permissions).HasFlag(rifleRackLocker.RequiredPermissions))))
+                    {
+                        locker.RpcPlayDenied(locker.ComponentIndex, rifleRackLocker.RequiredPermissions);
+                        return true;
+                    }
+
+                    // Open the locker
+                    rifleRackLocker.IsOpen = !rifleRackLocker.IsOpen;
+                    locker.RefreshOpenedSyncvar();
+                    return true;
+                }
 
                 return true;
             }
@@ -251,6 +266,12 @@ namespace ShootingInteractions
             // Elevators
             else if (gameObject.GetComponentInParent<ElevatorPanel>() is ElevatorPanel panel && Config.Elevators.IsEnabled)
             {
+                ElevatorInteraction elevatorInteractionConfig = Config.Elevators;
+
+                // Return if MinimumPenetration isn't reached
+                if (elevatorInteractionConfig.MinimumPenetration >= firearm.Penetration)
+                    return true;
+
                 // Return if the panel has no chamber
                 if (panel.AssignedChamber is null)
                     return true;
@@ -267,17 +288,17 @@ namespace ShootingInteractions
                     return true;
 
                 // Should the elevator get locked ? (Generate a number from 1 to 100 then check if it's lesser than config percentage)
-                bool shoudLock = !elevator.IsLocked && Random.Range(1, 101) <= Config.Elevators.ButtonsBreakChance;
+                bool shoudLock = !elevator.IsLocked && Random.Range(1, 101) <= elevatorInteractionConfig.ButtonsBreakChance;
 
                 // Lock the door if it should be locked BEFORE moving
-                if (shoudLock && !Config.Elevators.MoveBeforeBreaking)
+                if (shoudLock && !elevatorInteractionConfig.MoveBeforeBreaking)
                 {
                     foreach (ElevatorDoor door in list)
                         door.ServerChangeLock(DoorLockReason.Isolation, true);
 
                     // Unlock the door after the time indicated in the config (if greater than 0)
-                    if (Config.Elevators.ButtonsBreakTime > 0)
-                        Timing.CallDelayed(Config.Elevators.ButtonsBreakTime, () =>
+                    if (elevatorInteractionConfig.ButtonsBreakTime > 0)
+                        Timing.CallDelayed(elevatorInteractionConfig.ButtonsBreakTime, () =>
                         {
                             foreach (ElevatorDoor door in list)
                             {
@@ -295,14 +316,14 @@ namespace ShootingInteractions
                 elevator.TryStart(panel.AssignedChamber.NextLevel);
 
                 // Lock the door if it should be locked AFTER moving
-                if (shoudLock && Config.Elevators.MoveBeforeBreaking)
+                if (shoudLock && elevatorInteractionConfig.MoveBeforeBreaking)
                 {
                     foreach (ElevatorDoor door in list)
                         door.ServerChangeLock(DoorLockReason.Isolation, true);
 
                     // Unlock the door after the time indicated in the config (if greater than 0)
-                    if (Config.Elevators.ButtonsBreakTime > 0)
-                        Timing.CallDelayed(Config.Elevators.ButtonsBreakTime + elevator.MoveTime, () =>
+                    if (elevatorInteractionConfig.ButtonsBreakTime > 0)
+                        Timing.CallDelayed(elevatorInteractionConfig.ButtonsBreakTime + elevator.MoveTime, () =>
                         {
                             foreach (ElevatorDoor door in list)
                             {
@@ -333,15 +354,19 @@ namespace ShootingInteractions
                 // Non-custom grenades
                 else
                 {
-                    TimedProjectileInteraction grenadeInteraction = grenadePickup.Info.ItemId switch
+                    TimedProjectileInteraction grenadeInteractionConfig = grenadePickup.Info.ItemId switch
                     {
                         ItemType.GrenadeHE => Config.FragGrenades,
                         ItemType.GrenadeFlash => Config.Flashbangs,
                         _ => new TimedProjectileInteraction() { IsEnabled = false }
                     };
 
+                    // Return if MinimumPenetration isn't reached
+                    if (grenadeInteractionConfig.MinimumPenetration >= firearm.Penetration)
+                        return true;
+
                     // Return if either: the interaction isn't enabled, it can't get the grenade base, or it can't get the throwable
-                    if (!grenadeInteraction.IsEnabled || !InventoryItemLoader.AvailableItems.TryGetValue(grenadePickup.Info.ItemId, out ItemBase grenadeBase) || (grenadeBase is not ThrowableItem grenadeThrowable))
+                    if (!grenadeInteractionConfig.IsEnabled || !InventoryItemLoader.AvailableItems.TryGetValue(grenadePickup.Info.ItemId, out ItemBase grenadeBase) || (grenadeBase is not ThrowableItem grenadeThrowable))
                     {
                         return true;
                     }
@@ -358,7 +383,7 @@ namespace ShootingInteractions
                         Rigidbody grenadePickupRigidbody = grenadePickupPhysics.Rb;
                         grenadeProjectileRigidbody.position = grenadePickupRigidbody.position;
                         grenadeProjectileRigidbody.rotation = grenadePickupRigidbody.rotation;
-                        grenadeProjectileRigidbody.velocity = grenadePickupRigidbody.velocity + (player.CameraTransform.forward * (grenadeInteraction.AdditionalVelocity ? grenadeInteraction.VelocityForce : 0));
+                        grenadeProjectileRigidbody.linearVelocity = grenadePickupRigidbody.linearVelocity + direction * (firearm.Penetration * (grenadeInteractionConfig.AdditionalVelocity ? grenadeInteractionConfig.BulletForce : 0));
                     }
 
                     // Lock the grenade pickup
@@ -373,10 +398,10 @@ namespace ShootingInteractions
                     NetworkServer.Spawn(grenadeProjectile.gameObject);
 
                     // Should the grenade have a custom fuse time ? (Generate number from 1 to 100 then check if lesser than interaction percentage)
-                    if (Random.Range(1, 101) <= grenadeInteraction.MalfunctionChance)
+                    if (Random.Range(1, 101) <= grenadeInteractionConfig.CustomFuseTimeChance)
 
                         // Set the custom fuse time
-                        (grenadeProjectile as TimeGrenade)._fuseTime = Mathf.Max(Time.smoothDeltaTime * 2, grenadeInteraction.MalfunctionFuseTime);
+                        (grenadeProjectile as TimeGrenade)._fuseTime = Mathf.Max(Time.smoothDeltaTime * 2, grenadeInteractionConfig.CustomFuseTimeDuration);
 
                     // Activate the projectile and destroy the pickup
                     grenadeProjectile.ServerActivate();
@@ -384,80 +409,63 @@ namespace ShootingInteractions
                 }
             }
 
+            // SCP-018
             else if (gameObject.GetComponentInParent<TimeGrenade>() is TimeGrenade scp018)
             {
-                if (gameObject.name.Contains("HegProjectile"))
+                // Return if GameObject is not a SCP-018 projectile
+                if (!gameObject.name.Contains("Scp018Projectile"))
                     return true;
 
-                // Custom SCP-018s
-                if (Plugin.GetCustomItem is not null && (bool)Plugin.GetCustomItem.Invoke(null, new[] { Pickup.Get(scp018), null }))
-                {
-                    // Return if custom grenades aren't enabled
-                    if (!Config.CustomGrenades.IsEnabled)
-                        return true;
+                Scp018Interaction grenadeInteractionConfig = Config.Scp018;
 
-                    // Set the attacker to the player shooting and explode the custom grenade
-                    scp018.PreviousOwner = player.Footprint;
+                // Return if MinimumPenetration isn't reached
+                if (grenadeInteractionConfig.MinimumPenetration >= firearm.Penetration)
+                    return true;
+
+                // Return if either: the interaction isn't enabled, it can't get the grenade base, or it can't get the throwable
+                if (!grenadeInteractionConfig.IsEnabled || !InventoryItemLoader.AvailableItems.TryGetValue(scp018.Info.ItemId, out ItemBase grenadeBase) || (grenadeBase is not ThrowableItem grenadeThrowable))
+                    return true;
+
+                // Instantiate the projectile
+                ThrownProjectile scp018Projectile = Object.Instantiate(grenadeThrowable.Projectile);
+
+                // Set the physics of the projectile
+                PickupStandardPhysics grenadeProjectilePhysics = scp018Projectile.PhysicsModule as PickupStandardPhysics;
+                PickupStandardPhysics grenadePickupPhysics = scp018.PhysicsModule as PickupStandardPhysics;
+                if (grenadeProjectilePhysics is not null && grenadePickupPhysics is not null)
+                {
+                    Rigidbody grenadeProjectileRigidbody = grenadeProjectilePhysics.Rb;
+                    Rigidbody grenadePickupRigidbody = grenadePickupPhysics.Rb;
+                    grenadeProjectileRigidbody.position = grenadePickupRigidbody.position;
+                    grenadeProjectileRigidbody.rotation = grenadePickupRigidbody.rotation;
+                    grenadeProjectileRigidbody.linearVelocity = grenadePickupRigidbody.linearVelocity + direction * (firearm.Penetration * (grenadeInteractionConfig.AdditionalVelocity ? grenadeInteractionConfig.BulletForce : 0));
                 }
 
-                // Non-custom SCP-018s
-                else
-                {
-                    TimedProjectileInteraction grenadeInteraction = scp018.Info.ItemId switch
-                    {
-                        ItemType.SCP018 => Config.Scp018,
-                        _ => new TimedProjectileInteraction() { IsEnabled = false }
-                    };
+                // Lock the grenade pickup
+                scp018.Info.Locked = true;
 
-                    // Return if either: the interaction isn't enabled, it can't get the grenade base, or it can't get the throwable
-                    if (!grenadeInteraction.IsEnabled || !InventoryItemLoader.AvailableItems.TryGetValue(scp018.Info.ItemId, out ItemBase grenadeBase) || (grenadeBase is not ThrowableItem grenadeThrowable))
-                    {
-                        return true;
-                    }
+                // Set the network info and owner of the projectile
+                scp018Projectile.NetworkInfo = scp018.Info;
+                scp018.PreviousOwner = player.Footprint;
+                scp018Projectile.PreviousOwner = player.Footprint;
 
-                    // Instantiate the projectile
-                    ThrownProjectile grenadeProjectile = Object.Instantiate(grenadeThrowable.Projectile);
+                // Spawn the grenade projectile
+                NetworkServer.Spawn(scp018Projectile.gameObject);
 
-                    // Set the physics of the projectile
-                    PickupStandardPhysics grenadeProjectilePhysics = grenadeProjectile.PhysicsModule as PickupStandardPhysics;
-                    PickupStandardPhysics grenadePickupPhysics = scp018.PhysicsModule as PickupStandardPhysics;
-                    if (grenadeProjectilePhysics is not null && grenadePickupPhysics is not null)
-                    {
-                        Rigidbody grenadeProjectileRigidbody = grenadeProjectilePhysics.Rb;
-                        Rigidbody grenadePickupRigidbody = grenadePickupPhysics.Rb;
-                        grenadeProjectileRigidbody.position = grenadePickupRigidbody.position;
-                        grenadeProjectileRigidbody.rotation = grenadePickupRigidbody.rotation;
-                        grenadeProjectileRigidbody.linearVelocity = direction * (firearm.Penetration * -30) - new Vector3(0, 0.5f, 0); //grenadePickupRigidbody.linearVelocity + (player.CameraTransform.forward * (grenadeInteraction.AdditionalVelocity ? grenadeInteraction.VelocityForce : 0));
-                    }
+                // Should the grenade have a custom fuse time ? (Generate number from 1 to 100 then check if lesser than interaction percentage)
+                if (Random.Range(1, 101) <= grenadeInteractionConfig.CustomFuseTimeChance)
 
-                    // Lock the grenade pickup
-                    scp018.Info.Locked = true;
+                    // Set the custom fuse time
+                    (scp018Projectile as TimeGrenade)._fuseTime = Mathf.Max(Time.smoothDeltaTime * 2, grenadeInteractionConfig.CustomFuseTimeDuration);
 
-                    // Set the network info and owner of the projectile
-                    grenadeProjectile.NetworkInfo = scp018.Info;
-                    scp018.PreviousOwner = player.Footprint;
-                    grenadeProjectile.PreviousOwner = player.Footprint;
-
-                    // Spawn the grenade projectile
-                    NetworkServer.Spawn(grenadeProjectile.gameObject);
-
-                    // Should the grenade have a custom fuse time ? (Generate number from 1 to 100 then check if lesser than interaction percentage)
-                    if (Random.Range(1, 101) <= grenadeInteraction.MalfunctionChance)
-
-                        // Set the custom fuse time
-                        (grenadeProjectile as TimeGrenade)._fuseTime = Mathf.Max(Time.smoothDeltaTime * 2, grenadeInteraction.MalfunctionFuseTime);
-
-                    // Activate the projectile and destroy the pickup
-                    grenadeProjectile.ServerActivate();
-                    scp018.DestroySelf();
-
-                }
+                // Activate the projectile and destroy the pickup
+                scp018Projectile.ServerActivate();
+                scp018.DestroySelf();
             }
 
             // SCP-2176
             else if (gameObject.GetComponentInParent<Scp2176Projectile>() is Scp2176Projectile projectile && Config.Scp2176.IsEnabled)
                 projectile.ServerImmediatelyShatter();
-
 
             return false;
         }

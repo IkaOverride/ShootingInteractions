@@ -1,7 +1,7 @@
 ﻿using Exiled.API.Enums;
 using Exiled.API.Features;
 using Exiled.API.Features.Pickups;
-using ShootingInteractions.Configs;
+using ShootingInteractions.Configuration;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -17,11 +17,11 @@ namespace ShootingInteractions
 
         public override string Name => "ShootingInteractions";
 
-        public override string Author => "Ika";
+        public override string Author => "Ika, Maintained by Unbistrackted";
 
         public override Version RequiredExiledVersion => new(9, 6, 0);
 
-        public override Version Version => new(2, 4, 6);
+        public override Version Version => new(2, 5, 0);
 
         public override PluginPriority Priority => PluginPriority.First;
 
@@ -55,8 +55,6 @@ namespace ShootingInteractions
         public void RegisterEvents()
         {
             eventsHandler = new EventsHandler();
-
-            PlayerEvent.Hurt += eventsHandler.OnHurt;
 
             PlayerEvent.Shot += eventsHandler.OnShot;
         }

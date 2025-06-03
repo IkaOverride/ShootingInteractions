@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace ShootingInteractions.Configs
+namespace ShootingInteractions.Configuration.Bases
 {
     public class ProjectileInteraction
     {

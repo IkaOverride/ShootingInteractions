@@ -1,7 +1,8 @@
 ﻿using Exiled.API.Interfaces;
+using ShootingInteractions.Configuration.Bases;
 using System.ComponentModel;
 
-namespace ShootingInteractions.Configs
+namespace ShootingInteractions.Configuration
 {
     public sealed class Config : IConfig
     {
@@ -24,10 +25,19 @@ namespace ShootingInteractions.Configs
         public DoorInteraction Gates { get; set; } = new();
 
         [Description("Weapon lockers interaction")]
-        public LockerInteraction WeaponLockers { get; set; } = new();
+        public LockerInteraction WeaponLocker { get; set; } = new();
 
-        [Description("Bulletproof lockers interaction")]
-        public BulletproofLockerInteraction BulletproofLockers { get; set; } = new();
+        [Description("Pedestals interaction")]
+        public PedestalsInteraction Pedestal { get; set; } = new();
+
+        [Description("Rifle rack interaction")]
+        public LockerInteraction RifleRackLocker { get; set; } = new();
+
+        [Description("Experimental weapon lockers interaction")]
+        public LockerInteraction ExperimentalWeaponLocker { get; set; } = new();
+
+        [Description("SCP-127 container interaction")]
+        public LockerInteraction Scp127Container { get; set; } = new();
 
         [Description("Elevators buttons interaction")]
         public ElevatorInteraction Elevators { get; set; } = new();
@@ -44,6 +54,6 @@ namespace ShootingInteractions.Configs
         [Description("SCP-2176 interaction")]
         public ProjectileInteraction Scp2176 { get; set; } = new();
         [Description("SCP-018 interaction")]
-        public TimedProjectileInteraction Scp018 { get; set; } = new();
+        public Scp018Interaction Scp018 { get; set; } = new();
     }
 }
