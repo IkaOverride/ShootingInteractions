@@ -56,6 +56,8 @@ namespace ShootingInteractions
         {
             eventsHandler = new EventsHandler();
 
+            PlayerEvent.Hurt += eventsHandler.OnHurt;
+
             PlayerEvent.Shot += eventsHandler.OnShot;
         }
 

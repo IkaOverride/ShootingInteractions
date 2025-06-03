@@ -43,5 +43,7 @@ namespace ShootingInteractions.Configs
 
         [Description("SCP-2176 interaction")]
         public ProjectileInteraction Scp2176 { get; set; } = new();
+        [Description("SCP-018 interaction")]
+        public TimedProjectileInteraction Scp018 { get; set; } = new();
     }
 }

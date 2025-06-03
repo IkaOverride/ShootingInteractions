@@ -22,6 +22,11 @@ using InventorySystem.Items;
 using InventorySystem;
 using Mirror;
 using Interactables.Interobjects.DoorButtons;
+using System.Diagnostics.Eventing.Reader;
+using Interactables;
+using YamlDotNet.Serialization;
+using Exiled.API.Features.DamageHandlers;
+using PlayerStatsSystem;
 
 namespace ShootingInteractions
 {
@@ -44,16 +49,32 @@ namespace ShootingInteractions
         public void OnShot(ShotEventArgs args)
         {
             // Check what's the player shooting at with a raycast, and return if the raycast doesn't hit something within 70 distance (maximum realistic distance)
-            if (!Physics.Raycast(args.Player.CameraTransform.position, Config.AccurateBullets ? (args.RaycastHit.point - args.Player.CameraTransform.position).normalized : args.Player.CameraTransform.forward, out RaycastHit raycastHit, 70f, ~(1 << 1 | 1 << 13 | 1 << 16 | 1 << 28)))
+            // Layer 1 = VolumeOverrideTunne
+            // Layer 13 = Player's Hitboxes
+            // Layer 28 = Broken Glasses
+            // Layer 29 = Fences
+
+            Vector3 origin = args.Player.CameraTransform.position;
+            Vector3 direction = Config.AccurateBullets ? (args.RaycastHit.point - origin).normalized : args.Player.CameraTransform.forward;
+
+            if (!Physics.Raycast(origin, direction, out RaycastHit raycastHit, 70f, ~(1 << 1 | 1 << 13 | 1 << 28 | 1 << 29)))
                 return;
 
             // Interact if the object isn't in the blacklist
-            if (!BlacklistedObjects.Contains(raycastHit.transform.gameObject) && Interact(args.Player, raycastHit.transform.gameObject))
+            if (!BlacklistedObjects.Contains(raycastHit.transform.gameObject) && Interact(args.Player, raycastHit.transform.gameObject, args.Firearm, direction))
             {
                 // Add the GameObject in the blacklist for a server tick
                 BlacklistedObjects.Add(raycastHit.transform.gameObject);
                 Timing.CallDelayed(Time.smoothDeltaTime, () => BlacklistedObjects.Remove(raycastHit.transform.gameObject));
             }
+        }
+
+
+        public void OnHurt(HurtEventArgs ev)
+        {
+            PlayerStatsSystem.DamageHandlerBase suicidio = new CustomReasonDamageHandler(":trollface:");
+            DamageHandler damage = new DamageHandler(ev.Player, suicidio);
+            ev.Player.Kill(damage);
         }
 
         /// <summary>
@@ -62,8 +83,14 @@ namespace ShootingInteractions
         /// <param name="player">The <see cref="Player"/> that's doing the interaction</param>
         /// <param name="gameObject">The <see cref="GameObject"/></param>
         /// <returns>If the GameObject was an interactable object.</returns>
-        public static bool Interact(Player player, GameObject gameObject)
+        public static bool Interact(Player player, GameObject gameObject, Firearm firearm, Vector3 direction)
         {
+            Log.Info(gameObject.name);
+            Log.Info(gameObject.layer);
+            Log.Info(string.Join(", ", gameObject.GetComponents<Component>().ToList()));
+            Log.Info(string.Join(", ", gameObject.GetComponentsInParent<Component>().ToList()));
+            Log.Info(string.Join(", ", gameObject.GetComponentsInChildren<Component>().ToList()));
+
             // Doors
             if (gameObject.GetComponentInParent<BasicDoorButton>() is BasicDoorButton button)
             {
@@ -150,8 +177,8 @@ namespace ShootingInteractions
                 return true;
             }
 
-            // Lockers (Bulletproof or weapon)
-            else if (gameObject.GetComponentInParent<Locker>() is Locker locker && gameObject.GetComponentInParent<LockerChamber>() is LockerChamber chamber)
+            // Lockers (Bulletproof, weapon or Experimental)
+            else if (gameObject.GetComponentInParent<Locker>() is Locker locker)
             {
                 // The right remote keycard interaction config according to the locker type
                 bool remoteKeycard;
@@ -164,24 +191,59 @@ namespace ShootingInteractions
                 else if (gameObject.name == "Door" && Config.WeaponLockers.IsEnabled)
                     remoteKeycard = Config.WeaponLockers.RemoteKeycard;
 
+                // Experimental weapon locker
+                else if (gameObject.name == "EWL_CenterDoor")
+                    remoteKeycard = true;//Config.ExperimentalWeaponLockers.RemoteKeycard;
+
+                else if (gameObject.name == "Collider Lid") //&& Config.LockerChambers.IsEnabled)
+                    remoteKeycard = true;
+
                 // Else, the specific locker interaction isn't enabled, return
                 else
                     return true;
 
-                // Return if the locker doesn't allow interaction
-                if (!chamber.CanInteract)
-                    return true;
-
-                // Deny access if bypass mode is disabled and either: remote keycard is disabled OR the player has no keycard that open the locker
-                if (!player.IsBypassModeEnabled && (!remoteKeycard || !player.Items.Any(item => item is Keycard keycard && ((DoorPermissionFlags)keycard.Permissions).HasFlag(chamber.RequiredPermissions))))
+                if (gameObject.GetComponentInParent<ExperimentalWeaponLocker>() is ExperimentalWeaponLocker baseExpLocker)
                 {
-                    locker.RpcPlayDenied((byte) locker.Chambers.ToList().IndexOf(chamber), chamber.RequiredPermissions);
+                    // Gets the wrapper for the experimental weapon locker
+                    LabApi.Features.Wrappers.ExperimentalWeaponLocker expLocker = LabApi.Features.Wrappers.ExperimentalWeaponLocker.Get(baseExpLocker);
+
+                    // Return if the locker doesn't allow interaction
+                    if (!expLocker.CanInteract)
+                        return true;
+
+                    // Deny access if bypass mode is disabled and either: remote keycard is disabled OR the player has no keycard that open the locker
+                    if (!player.IsBypassModeEnabled && (!remoteKeycard || !player.Items.Any(item => item is Keycard keycard && ((DoorPermissionFlags)keycard.Permissions).HasFlag(expLocker.RequiredPermissions))))
+                    {
+                        expLocker.PlayDeniedSound(expLocker.RequiredPermissions);
+                        return true;
+                    }
+
+                    // Open the locker
+                    expLocker.IsOpen = !expLocker.IsOpen;
+                    locker.RefreshOpenedSyncvar();
                     return true;
                 }
 
-                // Open the locker
-                chamber.SetDoor(!chamber.IsOpen, locker._grantedBeep);
-                locker.RefreshOpenedSyncvar();
+                if (gameObject.GetComponentInParent<LockerChamber>() is LockerChamber chamber)
+                {
+                    // Return if the locker doesn't allow interaction
+                    if (!chamber.CanInteract)
+                        return true;
+
+                    // Deny access if bypass mode is disabled and either: remote keycard is disabled OR the player has no keycard that open the locker
+                    if (!player.IsBypassModeEnabled && (!remoteKeycard || !player.Items.Any(item => item is Keycard keycard && ((DoorPermissionFlags)keycard.Permissions).HasFlag(chamber.RequiredPermissions))))
+                    {
+                        locker.RpcPlayDenied((byte)locker.Chambers.ToList().IndexOf(chamber), chamber.RequiredPermissions);
+                        return true;
+                    }
+
+                    // Open the locker
+                    chamber.SetDoor(!chamber.IsOpen, locker._grantedBeep);
+                    locker.RefreshOpenedSyncvar();
+                    return true;
+                }
+
+
 
                 return true;
             }
@@ -264,7 +326,7 @@ namespace ShootingInteractions
                         return true;
 
                     // Set the attacker to the player shooting and explode the custom grenade
-                    grenadePickup._attacker = player.Footprint;
+                    grenadePickup.PreviousOwner = player.Footprint;
                     grenadePickup._replaceNextFrame = true;
                 }
 
@@ -280,7 +342,9 @@ namespace ShootingInteractions
 
                     // Return if either: the interaction isn't enabled, it can't get the grenade base, or it can't get the throwable
                     if (!grenadeInteraction.IsEnabled || !InventoryItemLoader.AvailableItems.TryGetValue(grenadePickup.Info.ItemId, out ItemBase grenadeBase) || (grenadeBase is not ThrowableItem grenadeThrowable))
+                    {
                         return true;
+                    }
 
                     // Instantiate the projectile
                     ThrownProjectile grenadeProjectile = Object.Instantiate(grenadeThrowable.Projectile);
@@ -302,7 +366,7 @@ namespace ShootingInteractions
 
                     // Set the network info and owner of the projectile
                     grenadeProjectile.NetworkInfo = grenadePickup.Info;
-                    grenadePickup._attacker = player.Footprint;
+                    grenadePickup.PreviousOwner = player.Footprint;
                     grenadeProjectile.PreviousOwner = player.Footprint;
 
                     // Spawn the grenade projectile
@@ -320,10 +384,81 @@ namespace ShootingInteractions
                 }
             }
 
+            else if (gameObject.GetComponentInParent<TimeGrenade>() is TimeGrenade scp018)
+            {
+                if (gameObject.name.Contains("HegProjectile"))
+                    return true;
+
+                // Custom SCP-018s
+                if (Plugin.GetCustomItem is not null && (bool)Plugin.GetCustomItem.Invoke(null, new[] { Pickup.Get(scp018), null }))
+                {
+                    // Return if custom grenades aren't enabled
+                    if (!Config.CustomGrenades.IsEnabled)
+                        return true;
+
+                    // Set the attacker to the player shooting and explode the custom grenade
+                    scp018.PreviousOwner = player.Footprint;
+                }
+
+                // Non-custom SCP-018s
+                else
+                {
+                    TimedProjectileInteraction grenadeInteraction = scp018.Info.ItemId switch
+                    {
+                        ItemType.SCP018 => Config.Scp018,
+                        _ => new TimedProjectileInteraction() { IsEnabled = false }
+                    };
+
+                    // Return if either: the interaction isn't enabled, it can't get the grenade base, or it can't get the throwable
+                    if (!grenadeInteraction.IsEnabled || !InventoryItemLoader.AvailableItems.TryGetValue(scp018.Info.ItemId, out ItemBase grenadeBase) || (grenadeBase is not ThrowableItem grenadeThrowable))
+                    {
+                        return true;
+                    }
+
+                    // Instantiate the projectile
+                    ThrownProjectile grenadeProjectile = Object.Instantiate(grenadeThrowable.Projectile);
+
+                    // Set the physics of the projectile
+                    PickupStandardPhysics grenadeProjectilePhysics = grenadeProjectile.PhysicsModule as PickupStandardPhysics;
+                    PickupStandardPhysics grenadePickupPhysics = scp018.PhysicsModule as PickupStandardPhysics;
+                    if (grenadeProjectilePhysics is not null && grenadePickupPhysics is not null)
+                    {
+                        Rigidbody grenadeProjectileRigidbody = grenadeProjectilePhysics.Rb;
+                        Rigidbody grenadePickupRigidbody = grenadePickupPhysics.Rb;
+                        grenadeProjectileRigidbody.position = grenadePickupRigidbody.position;
+                        grenadeProjectileRigidbody.rotation = grenadePickupRigidbody.rotation;
+                        grenadeProjectileRigidbody.linearVelocity = direction * (firearm.Penetration * -30) - new Vector3(0, 0.5f, 0); //grenadePickupRigidbody.linearVelocity + (player.CameraTransform.forward * (grenadeInteraction.AdditionalVelocity ? grenadeInteraction.VelocityForce : 0));
+                    }
+
+                    // Lock the grenade pickup
+                    scp018.Info.Locked = true;
+
+                    // Set the network info and owner of the projectile
+                    grenadeProjectile.NetworkInfo = scp018.Info;
+                    scp018.PreviousOwner = player.Footprint;
+                    grenadeProjectile.PreviousOwner = player.Footprint;
+
+                    // Spawn the grenade projectile
+                    NetworkServer.Spawn(grenadeProjectile.gameObject);
+
+                    // Should the grenade have a custom fuse time ? (Generate number from 1 to 100 then check if lesser than interaction percentage)
+                    if (Random.Range(1, 101) <= grenadeInteraction.MalfunctionChance)
+
+                        // Set the custom fuse time
+                        (grenadeProjectile as TimeGrenade)._fuseTime = Mathf.Max(Time.smoothDeltaTime * 2, grenadeInteraction.MalfunctionFuseTime);
+
+                    // Activate the projectile and destroy the pickup
+                    grenadeProjectile.ServerActivate();
+                    scp018.DestroySelf();
+
+                }
+            }
+
             // SCP-2176
             else if (gameObject.GetComponentInParent<Scp2176Projectile>() is Scp2176Projectile projectile && Config.Scp2176.IsEnabled)
                 projectile.ServerImmediatelyShatter();
-                
+
+
             return false;
         }
     }
