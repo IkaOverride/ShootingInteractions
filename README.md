@@ -55,7 +55,7 @@ A plugin that adds new interactions when shooting on objects!
 | only_keypad | bool | true | Should it only work when shooting on the keypad (false = whole interactable)
 
 ## ElevatorInteraction Configuration Settings
-| Setting Key | Type | Default Value | Description |
+| Setting Key | Value Type | Default Value | Description |
 -------------------------------|------------|---------------|------------------------------------------------------------------------------------------------
 | is_enabled | bool | true | Is the interaction enabled
 | buttons_break_chance | byte | 0 | Percentage of chance for the elevator to break (0 is disabled)
