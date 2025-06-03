@@ -82,12 +82,13 @@ This plugin requires [Exiled](https://github.com/ExSLMod-Team/EXILED/releases/ta
 
 You can download the latest version of ShootingInteractions [here](https://github.com/Unbistrackted/ShootingInteractions/releases/latest).
 
-## Special thanks to:
-
-https://github.com/IkaOverride for giving the permission to continue the development of [ShootingInteractions](https://github.com/Unbistrackted/ShootingInteractions).
-
 ## Suggestions
 
 If there's any issues, if you have any __suggestions__ or if you want to __help me improve the code__, feel free to DM me on **Discord** or open a **Github Issue**
 
 - Discord : @unbistrackted
+
+## Special thanks to:
+
+https://github.com/IkaOverride for giving the permission to continue the development of [ShootingInteractions](https://github.com/Unbistrackted/ShootingInteractions).
+
