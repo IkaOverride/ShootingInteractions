@@ -3,15 +3,16 @@
 A plugin that adds new interactions when shooting on objects!
 
 ## Interactions
-* Interact with doors by shooting on their buttons
+* Interact with doors/gates by shooting on their buttons
 * Interact with elevators by shooting on their buttons
-* Interact with lockers and bulletproof (SCP) lockers when shooting on them
-* Make grenades explode when shooting on them, and (not for custom grenades) choose if they explode instantly or not
-* Make SCP-2176 shatter when shooting on it
+* Interact with lockers and bulletproof lockers/pedestals when shooting on them
+* Interact with nuke buttons by shooting on them
+* Make grenades/SCP-018 ignite when shooting on them, and (not for custom grenades) choose if they explode instantly or not
+* Make SCP-2176 and SCP-244 shatter when shooting on it
 
 ## Other features
 * Bypass mode support
-* Random chance for buttons to "break" when shooting on them, you can configure for how long, and if the door/elevator should move before the buttons break
+* Random chance for buttons to "break/lock" when shooting on them, you can configure for how long, and if the door/elevator should move before the buttons break/lock
 * Random chance for grenades to "malfunction" when shooting on them, you can configure the fuse time of the grenade (time it takes before exploding)
 * Remote keycard (Check keycards in the player's inventory to open doors that requires a keycard)
 
