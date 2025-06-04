@@ -21,60 +21,82 @@ A plugin that adds new interactions when shooting on objects!
 | is_enabled | bool | true | Is the plugin enabled
 | debug | bool | false | Are the plugin's debug logs enabled
 | accurate_bullets | bool | false | Should it take into account where the bullet actually lands, instead of the center of the player's screen
-| doors | DoorInteraction | See DoorInteraction config | Default doors buttons interaction
-| checkpoints | DoorInteraction | See DoorInteraction config | Checkpoint doors buttons interaction
-| gates | DoorInteraction | See DoorInteraction config | Gates buttons interaction
-| weapon_lockers | LockerInteraction | See LockerInteraction config | Weapon lockers interaction
-| bulletproof_lockers | BulletproofLockerInteraction | See BulletproofLockerInteraction config | Bulletproof lockers interaction
-| elevators | ElevatorInteraction | See ElevatorInteraction config | Elevators buttons interaction
-| frag_grenades | TimedProjectileInteraction | See TimedProjectileInteraction config | Frag grenades interaction
-| flashbangs | TimedProjectileInteraction | See TimedProjectileInteraction config | Flashbangs interaction
-| custom_grenades | ProjectileInteraction | See ProjectileInteraction config | Custom grenades interaction
-| scp2176 | ProjectileInteraction | See ProjectileInteraction config | SCP-2176 interaction
+| doors | DoorsInteraction | See DoorInteraction config | Default doors buttons interaction
+| checkpoints | DoorsInteraction | See DoorInteraction config | Checkpoint doors buttons interaction
+| gates | DoorsInteraction | See DoorInteraction config | Gates buttons interaction
+| weapon_grid_lockers | LockersInteraction | See LockersInteraction config | Weapon grid lockers interaction
+| bulletproof_lockers | BulletproofLockersInteraction | See BulletproofLockersInteraction config | Pedestals/Bulletproof lockers interaction
+| rifle_rack_lockers | LockersInteraction | See LockersInteraction config | Rifle rack interaction
+| experimental_weapon_lockers | LockersInteraction | See LockersInteraction config | Experimental weapon lockers interaction
+| scp127_container | LockersInteraction | See LockersInteraction config | SCP-127 container interaction
+| elevators | ElevatorsInteraction | See ElevatorsInteractionconfig | Elevators buttons interaction
+| frag_grenades | TimedProjectilesInteraction | See TimedProjectilesInteraction config | Frag grenades interaction
+| flashbangs | TimedProjectilesInteraction | See TimedProjectilesInteraction config | Flashbangs interaction
+| custom_grenades | ProjectilesInteraction | See ProjectilesInteraction config | Custom grenades interaction
+| nuke_start_button | NukeButtonsInteraction  | See NukeButtonsInteraction config | Nuke start button interaction
+| nuke_cancel_button | NukeButtonsInteraction  | See NukeButtonsInteraction config | Nuke cancel button interaction
+| scp018 | TimedProjectilesInteraction | See TimedProjectilesInteraction config | SCP-018 interaction
+| scp2176 | ProjectilesInteraction | See ProjectilesInteraction config | SCP-2176 interaction
+| scp244 | ProjectilesInteraction | See ProjectilesInteraction config | SCP-244 interaction
 
-## DoorInteraction Configuration Settings
+## DoorsInteraction Configuration Settings
 | Setting Key | Value Type | Default Value | Description |
 -------------------------------|------------|---------------|------------------------------------------------------------------------------------------------
 | is_enabled | bool | true | Is the interaction enabled
+| minimum_penetration | float | 0 | What's the weapon's minimum armor penetration percentage for the interaction to occur (0 is disabled)
 | remote_keycard | bool | false | Should it check keycards in the player's inventory
-| buttons_break_chance | byte | 0 | Percentage of chance for the buttons to break (0 is disabled)
-| buttons_break_time | float | 10 | For how long should the buttons stay broken (0 or less is infinite)
-| move_before_breaking | bool | true | Should the door still move/do its animation before breaking
+| lock_chance | byte | 0 | Chance for the door to get locked after shooting (0 is disabled | 100 is always)
+| lock_duration | float | 10 | For how long should the door stay locked (0 or less is infinite)
+| move_before_breaking | bool | true | Should the door open/close before getting locked
 
-## LockerInteraction Configuration Settings
+## LockersInteraction Configuration Settings
 | Config | Value Type | Default Value | Description |
 -------------------------------|------------|---------------|------------------------------------------------------------------------------------------------
 | is_enabled | bool | true | Is the interaction enabled
+| minimum_penetration | float | 0 | What's the weapon's minimum armor penetration percentage for the interaction to occur (0 is disabled)
 | remote_keycard | bool | true | Should it check keycards in the player's inventory
 
-## BulletproofLockerInteraction Configuration Settings
+## BulletproofLockersInteraction Configuration Settings
 | Setting Key | Value Type | Default | Description |
 -------------------------------|------------|---------------|------------------------------------------------------------------------------------------------
 | is_enabled | bool | true | Is the interaction enabled
+| minimum_penetration | float | 0 | What's the weapon's minimum armor penetration percentage for the interaction to occur (0 is disabled)
 | remote_keycard | bool | true | Should it check keycards in the player's inventory
-| only_keypad | bool | true | Should it only work when shooting on the keypad (false = whole interactable)
+| only_keypad | bool | true | Should it only work when shooting on the keypad (false is whole interactable)
 
-## ElevatorInteraction Configuration Settings
+## ElevatorsInteraction Configuration Settings
 | Setting Key | Value Type | Default Value | Description |
 -------------------------------|------------|---------------|------------------------------------------------------------------------------------------------
 | is_enabled | bool | true | Is the interaction enabled
-| buttons_break_chance | byte | 0 | Percentage of chance for the elevator to break (0 is disabled)
-| buttons_break_time | float | 10 | For how long should the elevator stay broken (0 or less is infinite)
-| move_before_breaking | bool | true | Should the elevator still move/do its animation before breaking
+| minimum_penetration | float | 0 | What's the weapon's minimum armor penetration percentage for the interaction to occur (0 is disabled)
+| lock_chance | byte | 0 | Chance for the elevator to get locked after shooting (0 is disabled | 100 is always)
+| lock_duration | float | 10 | How long should the elevator stay locked (0 or less is infinite)
+| move_before_breaking | bool | true | Should the elevator move before getting locked
 
-## ProjectileInteraction Configuration Settings
+## ProjectilesInteraction Configuration Settings
 | Setting Key | Value Type | Default Value | Description |
 -------------------------------|------------|---------------|------------------------------------------------------------------------------------------------
 | is_enabled | bool | true | Is the interaction enabled
+| minimum_penetration | float | 0 | What's the weapon's minimum armor penetration percentage for the interaction to occur (0 is disabled)
 
-## TimedProjectileInteraction Configuration Settings
+## TimedProjectilesInteraction Configuration Settings
 | Setting Key | Value Type | Default Value | Description |
 -------------------------------|------------|---------------|------------------------------------------------------------------------------------------------
 | is_enabled | bool | true | Is the interaction enabled
-| malfunction_chance | byte | 0 | Percentage of chance for the grenade to malfunction (0 is disabled)
-| malfunction_fuse_time | float | 0 | Grenade's fuse time when malfunction occurs
-| additional_velocity | bool | false | Should the grenade get additional velocity to where the player is facing
-| velocity_force | float | 7.5 | The force of the velocity that gets added
+| minimum_penetration | float | 0 | What's the weapon's minimum armor penetration percentage for the interaction to occur (0 is disabled)
+| custom_fuse_time_chance | byte | 0 | Chance to have a custom fuse time (0 is disabled | 100 is always)
+| custom_fuse_time_duration | float | 0 | Custom fuse time (in seconds)
+| additional_velocity | bool | false | Should the bullet affect the object's velocity
+| velocity_force | float | 7.5 | The force of the bullet that gets multiplied with the object velocity
+| scale_with_penetration | bool | false | Should the bullet armor penetration affect the object's velocity
+| velocity_force | float | 7.5 | Constant that gets multiplied with the object velocity and bullet armor penetration
+
+## NukeButtonsInteraction Configuration Settings
+| Setting Key | Value Type | Default Value | Description |
+-------------------------------|------------|---------------|------------------------------------------------------------------------------------------------
+| is_enabled | bool | true | Is the interaction enabled
+| minimum_penetration | float | 0 | What's the weapon's minimum armor penetration percentage for the interaction to occur (0 is disabled)
+
 
 ## Download
 
