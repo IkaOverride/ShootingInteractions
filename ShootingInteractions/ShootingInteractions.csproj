@@ -61,15 +61,15 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Configuration\Bases\PedestalsInteraction.cs" />
-    <Compile Include="Configuration\Bases\Scp018Interaction.cs" />
+    <Compile Include="Configuration\Bases\BulletproofLockersInteraction.cs" />
+    <Compile Include="Configuration\Bases\NukeButtonsInteraction.cs" />
     <Compile Include="Configuration\Config.cs" />
-    <Compile Include="Configuration\Bases\ProjectileInteraction.cs" />
-    <Compile Include="Configuration\Bases\ElevatorInteraction.cs" />
-    <Compile Include="Configuration\Bases\LockerInteraction.cs" />
+    <Compile Include="Configuration\Bases\ProjectilesInteraction.cs" />
+    <Compile Include="Configuration\Bases\ElevatorsInteraction.cs" />
+    <Compile Include="Configuration\Bases\LockersInteraction.cs" />
     <Compile Include="EventsHandler.cs" />
-    <Compile Include="Configuration\Bases\DoorInteraction.cs" />
-    <Compile Include="Configuration\Bases\TimedProjectileInteraction.cs" />
+    <Compile Include="Configuration\Bases\DoorsInteraction.cs" />
+    <Compile Include="Configuration\Bases\TimedProjectilesInteraction.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

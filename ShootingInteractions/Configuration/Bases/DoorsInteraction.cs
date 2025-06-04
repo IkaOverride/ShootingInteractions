@@ -2,10 +2,13 @@
 
 namespace ShootingInteractions.Configuration.Bases
 {
-    public class DoorInteraction
+    public class DoorsInteraction
     {
         [Description("Is the interaction enabled")]
         public bool IsEnabled { get; set; } = true;
+
+        [Description("What's the weapon's minimum armor penetration percentage for the interaction to occur (0 = disabled)")]
+        public float MinimumPenetration { get; set; } = 0;
 
         [Description("Should it check keycards in the player's inventory")]
         public bool RemoteKeycard { get; set; } = false;
@@ -18,8 +21,5 @@ namespace ShootingInteractions.Configuration.Bases
 
         [Description("Should the door open/close before getting locked")]
         public bool MoveBeforeLocking { get; set; } = false;
-
-        [Description("What's the minimum ammo penetration to the interaction occour (0 = disabled)")]
-        public float MinimumPenetration { get; set; } = 0;
     }
 }

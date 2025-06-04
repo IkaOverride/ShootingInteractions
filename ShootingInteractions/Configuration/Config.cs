@@ -16,44 +16,54 @@ namespace ShootingInteractions.Configuration
         public bool AccurateBullets { get; set; } = false;
 
         [Description("Door buttons interaction")]
-        public DoorInteraction Doors { get; set; } = new();
+        public DoorsInteraction Doors { get; set; } = new();
 
         [Description("Checkpoint door buttons interaction")]
-        public DoorInteraction Checkpoints { get; set; } = new();
+        public DoorsInteraction Checkpoints { get; set; } = new();
 
         [Description("Gate buttons interaction")]
-        public DoorInteraction Gates { get; set; } = new();
+        public DoorsInteraction Gates { get; set; } = new();
 
-        [Description("Weapon lockers interaction")]
-        public LockerInteraction WeaponLocker { get; set; } = new();
+        [Description("Weapon grid lockers interaction")]
+        public LockersInteraction WeaponGridLockers { get; set; } = new();
 
-        [Description("Pedestals interaction")]
-        public PedestalsInteraction Pedestal { get; set; } = new();
+        [Description("Pedestals/Bulletproof lockers interaction")]
+        public BulletproofLockersInteraction BulletproofLockers { get; set; } = new();
 
         [Description("Rifle rack interaction")]
-        public LockerInteraction RifleRackLocker { get; set; } = new();
+        public LockersInteraction RifleRackLockers { get; set; } = new();
 
         [Description("Experimental weapon lockers interaction")]
-        public LockerInteraction ExperimentalWeaponLocker { get; set; } = new();
+        public LockersInteraction ExperimentalWeaponLockers { get; set; } = new();
 
         [Description("SCP-127 container interaction")]
-        public LockerInteraction Scp127Container { get; set; } = new();
+        public LockersInteraction Scp127Container { get; set; } = new();
 
         [Description("Elevators buttons interaction")]
-        public ElevatorInteraction Elevators { get; set; } = new();
+        public ElevatorsInteraction Elevators { get; set; } = new();
 
         [Description("Frag grenades interaction")]
-        public TimedProjectileInteraction FragGrenades { get; set; } = new();
+        public TimedProjectilesInteraction FragGrenades { get; set; } = new();
 
         [Description("Flashbangs interaction")]
-        public TimedProjectileInteraction Flashbangs { get; set; } = new();
+        public TimedProjectilesInteraction Flashbangs { get; set; } = new();
 
         [Description("Custom grenades interaction")]
-        public ProjectileInteraction CustomGrenades { get; set; } = new();
+        public ProjectilesInteraction CustomGrenades { get; set; } = new();
+
+        [Description("Nuke start button interaction")]
+        public NukeButtonsInteraction NukeStartButton { get; set; } = new();
+
+        [Description("Nuke cancel button interaction")]
+        public NukeButtonsInteraction NukeCancelButton { get; set; } = new();
+
+        [Description("SCP-018 interaction")]
+        public TimedProjectilesInteraction Scp018 { get; set; } = new();
 
         [Description("SCP-2176 interaction")]
-        public ProjectileInteraction Scp2176 { get; set; } = new();
-        [Description("SCP-018 interaction")]
-        public Scp018Interaction Scp018 { get; set; } = new();
+        public ProjectilesInteraction Scp2176 { get; set; } = new();
+
+        [Description("SCP-244 interaction")]
+        public ProjectilesInteraction Scp244 { get; set; } = new();
     }
 }

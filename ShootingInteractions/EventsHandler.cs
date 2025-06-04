@@ -10,9 +10,11 @@ using InventorySystem;
 using InventorySystem.Items;
 using InventorySystem.Items.Pickups;
 using InventorySystem.Items.ThrowableProjectiles;
+using InventorySystem.Items.Usables.Scp244;
 using MapGeneration.Distributors;
 using MEC;
 using Mirror;
+using NorthwoodLib;
 using ShootingInteractions.Configuration;
 using ShootingInteractions.Configuration.Bases;
 using System.Collections.Generic;
@@ -22,7 +24,11 @@ using BasicDoor = Exiled.API.Features.Doors.BasicDoor;
 using CheckpointDoor = Exiled.API.Features.Doors.CheckpointDoor;
 using DoorLockType = Exiled.API.Enums.DoorLockType;
 using ElevatorDoor = Interactables.Interobjects.ElevatorDoor;
+using Object = UnityEngine.Object;
+using Random = UnityEngine.Random;
 using Scp2176Projectile = InventorySystem.Items.ThrowableProjectiles.Scp2176Projectile;
+using InteractableCollider = Interactables.InteractableCollider;
+using Exiled.API.Enums;
 
 namespace ShootingInteractions
 {
@@ -47,13 +53,14 @@ namespace ShootingInteractions
             // Check what's the player shooting at with a raycast, and return if the raycast doesn't hit something within 70 distance (maximum realistic distance)
             // Layer 1 = VolumeOverrideTunne
             // Layer 13 = Player's Hitboxes
+            // Layer 16 = Surface Gate A Bridge
             // Layer 28 = Broken Glasses
             // Layer 29 = Fences
 
             Vector3 origin = args.Player.CameraTransform.position;
             Vector3 direction = Config.AccurateBullets ? (args.RaycastHit.point - origin).normalized : args.Player.CameraTransform.forward;
 
-            if (!Physics.Raycast(origin, direction, out RaycastHit raycastHit, 70f, ~(1 << 1 | 1 << 13 | 1 << 28 | 1 << 29)))
+            if (!Physics.Raycast(origin, direction, out RaycastHit raycastHit, 70f, ~(1 << 1 | 1 << 13 | 1 << 16 | 1 << 28 | 1 << 29)))
                 return;
 
             // Interact if the object isn't in the blacklist
@@ -70,38 +77,49 @@ namespace ShootingInteractions
         /// </summary>
         /// <param name="player">The <see cref="Player"/> that's doing the interaction</param>
         /// <param name="gameObject">The <see cref="GameObject"/></param>
+        /// <param name="firearm">The <see cref="Firearm"/> that was used</param>
+        /// <param name="direction">The <see cref="Vector3"/> the direction which the raycast was shot</param>
         /// <returns>If the GameObject was an interactable object.</returns>
         public static bool Interact(Player player, GameObject gameObject, Firearm firearm, Vector3 direction)
         {
-            Log.Info(firearm.Penetration);
             // Doors
             if (gameObject.GetComponentInParent<BasicDoorButton>() is BasicDoorButton button)
             {
-                DoorInteraction doorInteractionConfig = Config.Doors;
-
-                if (doorInteractionConfig.MinimumPenetration >= firearm.Penetration)
-                    return true;
-
                 // Get the door associated to the button
                 Door door = Door.Get(button.GetComponentInParent<DoorVariant>());
 
+                DoorsInteraction doorInteractionConfig = door switch
+                {
+                    Gate => Config.Gates,
+                    CheckpointDoor => Config.Checkpoints,
+                    BasicDoor => Config.Doors,
+                    _ => new DoorsInteraction { IsEnabled = false }
+                };
+
                 // Return if:
+                //  - if the interaction isn't enabled
+                //  - if MinimumPenetration isn't reached
                 //  - door can't be found
                 //  - door is moving
                 //  - door is locked, and bypass mode is disabled
                 //  - it's an open checkpoint
-                if (door is null || door.IsMoving || (door.IsLocked && !player.IsBypassModeEnabled) || (door.IsCheckpoint && door.IsOpen))
+                if (!doorInteractionConfig.IsEnabled 
+                    || (doorInteractionConfig.MinimumPenetration / 100 >= firearm.Penetration) 
+                    || door is null 
+                    || door.IsMoving 
+                    || (door.IsLocked && !player.IsBypassModeEnabled) 
+                    || (door.IsCheckpoint && door.IsOpen))
                     return true;
 
                 // Get the door cooldown (used to lock the door AFTER it moved) and the config depending on the door type
                 float cooldown = 0f;
 
-                if (door is CheckpointDoor checkpoint)
+                if (door.Is(out CheckpointDoor checkpoint))
                 {
                     cooldown = 0.6f + checkpoint.WaitTime + checkpoint.WarningTime;
-                    doorInteractionConfig = Config.Checkpoints;
+                    //doorInteractionConfig = Config.Checkpoints;
                 }
-                else if (door is BasicDoor interactableDoor)
+                else if (door.Is(out BasicDoor interactableDoor))
                 {
                     // Return if the door is in cooldown
                     if (interactableDoor.RemainingCooldown >= 0.1f)
@@ -115,13 +133,9 @@ namespace ShootingInteractions
                         if (!door.IsOpen)
                             cooldown -= 0.35f;
 
-                        doorInteractionConfig = Config.Gates;
+                        //doorInteractionConfig = Config.Gates;
                     }
                 }
-
-                // Return if the interaction isn't enabled
-                if (!doorInteractionConfig.IsEnabled)
-                    return true;
 
                 // Should the door get locked ? (Generate number from 1 to 100 then check if lesser than interaction percentage)
                 bool shouldLock = !door.IsLocked && Random.Range(1, 101) <= doorInteractionConfig.LockChance;
@@ -141,7 +155,7 @@ namespace ShootingInteractions
                 }
 
                 // Deny access if the door is a keycard door, bypass mode is disabled, and either: remote keycard is disabled OR the player has no keycard that open the door
-                if (door.IsKeycardDoor && !player.IsBypassModeEnabled && (!doorInteractionConfig.RemoteKeycard || !player.Items.Any(item => item is Keycard keycard && ((DoorPermissionFlags)keycard.Permissions & door.RequiredPermissions) != 0)))
+                if (door.IsKeycardDoor && !player.IsBypassModeEnabled && (!doorInteractionConfig.RemoteKeycard || !player.Items.Any(item => item is Keycard keycard && ((DoorPermissionFlags)keycard.Permissions).HasFlag(door.RequiredPermissions))))
                 {
                     door.Base.PermissionsDenied(null, 0);
                     return true;
@@ -167,34 +181,24 @@ namespace ShootingInteractions
             // Lockers (Pedestal, Weapon, Experimental and SCP-127)
             else if (gameObject.GetComponentInParent<Locker>() is Locker locker)
             {
-                LockerInteraction lockerInteractionConfig = gameObject.name switch
+                LockersInteraction lockerInteractionConfig = gameObject.name switch
                 {
-                    "Collider Keypad" => Config.Pedestal,
-                    "Collider Door" => Config.Pedestal,
-                    "Door" => Config.WeaponLocker,
-                    "EWL_CenterDoor" => Config.ExperimentalWeaponLocker,
+                    "Collider Keypad" => Config.BulletproofLockers,
+                    "Collider Door" => Config.BulletproofLockers,
+                    "Door" => Config.WeaponGridLockers,
+                    "EWL_CenterDoor" => Config.ExperimentalWeaponLockers,
                     "Collider Lid" => Config.Scp127Container,
-                    "Collider" => Config.RifleRackLocker,
-                    _ => new LockerInteraction() { IsEnabled = false }
+                    "Collider" => Config.RifleRackLockers,
+                    _ => new LockersInteraction() { IsEnabled = false }
                 };
 
-                // The right remote keycard interaction config according to the locker type
-                bool remoteKeycard;
-
-                // Return if MinimumPenetration isn't reached
-                if (lockerInteractionConfig.MinimumPenetration >= firearm.Penetration)
-                    return true;
-
-                // Return if OnlyKeypad isn't enabled
-                if (lockerInteractionConfig is PedestalsInteraction bulletProofLockerInteractionConfig && gameObject.name == "Collider Door" && bulletProofLockerInteractionConfig.OnlyKeypad)
-                    return true;
-
-                // Return if the interaction isn't enabled
-                if (lockerInteractionConfig.IsEnabled)
-                    remoteKeycard = lockerInteractionConfig.RemoteKeycard;
-
-                // Else, the specific locker interaction isn't enabled, return
-                else
+                // Return if:
+                //  - interaction isn't enabled
+                //  - MinimumPenetration isn't reached
+                //  - OnlyKeypad isn't enabled
+                if (!lockerInteractionConfig.IsEnabled 
+                    || (lockerInteractionConfig.MinimumPenetration / 100 >= firearm.Penetration)
+                    || (lockerInteractionConfig is BulletproofLockersInteraction bulletProofLockerInteractionConfig && gameObject.name == "Collider Door" && bulletProofLockerInteractionConfig.OnlyKeypad))
                     return true;
 
                 // Experimental weapon lockers
@@ -208,7 +212,7 @@ namespace ShootingInteractions
                         return true;
 
                     // Deny access if bypass mode is disabled and either: remote keycard is disabled OR the player has no keycard that open the locker
-                    if (!player.IsBypassModeEnabled && (!remoteKeycard || !player.Items.Any(item => item is Keycard keycard && ((DoorPermissionFlags)keycard.Permissions).HasFlag(expLocker.RequiredPermissions))))
+                    if (!player.IsBypassModeEnabled && (!lockerInteractionConfig.RemoteKeycard || !player.Items.Any(item => item is Keycard keycard && ((DoorPermissionFlags)keycard.Permissions).HasFlag(expLocker.RequiredPermissions))))
                     {
                         expLocker.PlayDeniedSound(expLocker.RequiredPermissions);
                         return true;
@@ -220,7 +224,7 @@ namespace ShootingInteractions
                     return true;
                 }
 
-                // SCP-127 container, Pedestals and Weapon lockers
+                // SCP-127 container, Pedestals and Weapon grid lockers
                 if (gameObject.GetComponentInParent<LockerChamber>() is LockerChamber chamber)
                 {
                     // Return if the locker doesn't allow interaction
@@ -228,9 +232,9 @@ namespace ShootingInteractions
                         return true;
 
                     // Deny access if bypass mode is disabled and either: remote keycard is disabled OR the player has no keycard that open the locker
-                    if (!player.IsBypassModeEnabled && (!remoteKeycard || !player.Items.Any(item => item is Keycard keycard && ((DoorPermissionFlags)keycard.Permissions).HasFlag(chamber.RequiredPermissions))))
+                    if (!player.IsBypassModeEnabled && (!lockerInteractionConfig.RemoteKeycard || !player.Items.Any(item => item is Keycard keycard && ((DoorPermissionFlags)keycard.Permissions).HasFlag(chamber.RequiredPermissions))))
                     {
-                        locker.RpcPlayDenied(locker.ComponentIndex, chamber.RequiredPermissions);
+                        locker.RpcPlayDenied((byte)locker.Chambers.ToList().IndexOf(chamber), chamber.RequiredPermissions);
                         return true;
                     }
 
@@ -248,7 +252,7 @@ namespace ShootingInteractions
                         return true;
 
                     // Deny access if bypass mode is disabled and either: remote keycard is disabled OR the player has no keycard that open the locker
-                    if (!player.IsBypassModeEnabled && (!remoteKeycard || !player.Items.Any(item => item is Keycard keycard && ((DoorPermissionFlags)keycard.Permissions).HasFlag(rifleRackLocker.RequiredPermissions))))
+                    if (!player.IsBypassModeEnabled && (!lockerInteractionConfig.RemoteKeycard || !player.Items.Any(item => item is Keycard keycard && ((DoorPermissionFlags)keycard.Permissions).HasFlag(rifleRackLocker.RequiredPermissions))))
                     {
                         locker.RpcPlayDenied(locker.ComponentIndex, rifleRackLocker.RequiredPermissions);
                         return true;
@@ -264,41 +268,43 @@ namespace ShootingInteractions
             }
 
             // Elevators
-            else if (gameObject.GetComponentInParent<ElevatorPanel>() is ElevatorPanel panel && Config.Elevators.IsEnabled)
+            else if (gameObject.GetComponentInParent<ElevatorPanel>() is ElevatorPanel panel)
             {
-                ElevatorInteraction elevatorInteractionConfig = Config.Elevators;
-
-                // Return if MinimumPenetration isn't reached
-                if (elevatorInteractionConfig.MinimumPenetration >= firearm.Penetration)
-                    return true;
-
-                // Return if the panel has no chamber
-                if (panel.AssignedChamber is null)
-                    return true;
+                ElevatorsInteraction elevatorInteractionConfig = Config.Elevators;
 
                 // Get the elevator associated to the button
                 Lift elevator = Lift.Get(panel.AssignedChamber);
 
                 // Return if:
+                //  - interaction isn't enabled
+                //  - MinimumPenetration isn't reached
+                //  - panel has no chamber
                 //  - elevator can't be found
                 //  - elevator is moving
                 //  - elevator is locked and bypass mode is disabled
                 //  - no elevator doors
-                if (elevator is null || elevator.IsMoving || !elevator.IsOperative || (elevator.IsLocked && !player.IsBypassModeEnabled) || !ElevatorDoor.AllElevatorDoors.TryGetValue(panel.AssignedChamber.AssignedGroup, out List<ElevatorDoor> list))
+                if (!elevatorInteractionConfig.IsEnabled 
+                    || (elevatorInteractionConfig.MinimumPenetration / 100 >= firearm.Penetration) 
+                    || panel.AssignedChamber is null 
+                    || elevator is null 
+                    || elevator.IsMoving 
+                    || !elevator.IsOperative 
+                    || (elevator.IsLocked && !player.IsBypassModeEnabled) 
+                    || !ElevatorDoor.AllElevatorDoors.TryGetValue(panel.AssignedChamber.AssignedGroup, out List<ElevatorDoor> list))
                     return true;
 
                 // Should the elevator get locked ? (Generate a number from 1 to 100 then check if it's lesser than config percentage)
-                bool shoudLock = !elevator.IsLocked && Random.Range(1, 101) <= elevatorInteractionConfig.ButtonsBreakChance;
+                bool shoudLock = !elevator.IsLocked && Random.Range(1, 101) <= elevatorInteractionConfig.LockChance;
 
                 // Lock the door if it should be locked BEFORE moving
-                if (shoudLock && !elevatorInteractionConfig.MoveBeforeBreaking)
+                if (shoudLock && !elevatorInteractionConfig.MoveBeforeLocking)
                 {
                     foreach (ElevatorDoor door in list)
                         door.ServerChangeLock(DoorLockReason.Isolation, true);
 
                     // Unlock the door after the time indicated in the config (if greater than 0)
-                    if (elevatorInteractionConfig.ButtonsBreakTime > 0)
-                        Timing.CallDelayed(elevatorInteractionConfig.ButtonsBreakTime, () =>
+                    if (elevatorInteractionConfig.LockDuration > 0)
+                        Timing.CallDelayed(elevatorInteractionConfig.LockDuration, () =>
                         {
                             foreach (ElevatorDoor door in list)
                             {
@@ -316,14 +322,14 @@ namespace ShootingInteractions
                 elevator.TryStart(panel.AssignedChamber.NextLevel);
 
                 // Lock the door if it should be locked AFTER moving
-                if (shoudLock && elevatorInteractionConfig.MoveBeforeBreaking)
+                if (shoudLock && elevatorInteractionConfig.MoveBeforeLocking)
                 {
                     foreach (ElevatorDoor door in list)
                         door.ServerChangeLock(DoorLockReason.Isolation, true);
 
                     // Unlock the door after the time indicated in the config (if greater than 0)
-                    if (elevatorInteractionConfig.ButtonsBreakTime > 0)
-                        Timing.CallDelayed(elevatorInteractionConfig.ButtonsBreakTime + elevator.MoveTime, () =>
+                    if (elevatorInteractionConfig.LockDuration > 0)
+                        Timing.CallDelayed(elevatorInteractionConfig.LockDuration + elevator.MoveTime, () =>
                         {
                             foreach (ElevatorDoor door in list)
                             {
@@ -332,7 +338,6 @@ namespace ShootingInteractions
                             }
                         });
                 }
-
                 return true;
             }
 
@@ -342,8 +347,11 @@ namespace ShootingInteractions
                 // Custom grenades
                 if (Plugin.GetCustomItem is not null && (bool)Plugin.GetCustomItem.Invoke(null, new[] { Pickup.Get(grenadePickup), null }))
                 {
-                    // Return if custom grenades aren't enabled
-                    if (!Config.CustomGrenades.IsEnabled)
+                    // Return if:
+                    //  - interaction isn't enabled
+                    //  - MinimumPenetration isn't reached
+                    if (!Config.CustomGrenades.IsEnabled 
+                        || (Config.CustomGrenades.MinimumPenetration >= firearm.Penetration / 100))
                         return true;
 
                     // Set the attacker to the player shooting and explode the custom grenade
@@ -354,19 +362,19 @@ namespace ShootingInteractions
                 // Non-custom grenades
                 else
                 {
-                    TimedProjectileInteraction grenadeInteractionConfig = grenadePickup.Info.ItemId switch
+                    TimedProjectilesInteraction grenadeInteractionConfig = grenadePickup.Info.ItemId switch
                     {
                         ItemType.GrenadeHE => Config.FragGrenades,
                         ItemType.GrenadeFlash => Config.Flashbangs,
-                        _ => new TimedProjectileInteraction() { IsEnabled = false }
+                        _ => new TimedProjectilesInteraction() { IsEnabled = false }
                     };
 
-                    // Return if MinimumPenetration isn't reached
-                    if (grenadeInteractionConfig.MinimumPenetration >= firearm.Penetration)
-                        return true;
-
-                    // Return if either: the interaction isn't enabled, it can't get the grenade base, or it can't get the throwable
-                    if (!grenadeInteractionConfig.IsEnabled || !InventoryItemLoader.AvailableItems.TryGetValue(grenadePickup.Info.ItemId, out ItemBase grenadeBase) || (grenadeBase is not ThrowableItem grenadeThrowable))
+                    // Return if:
+                    //  - interaction isn't enabled
+                    //  - MinimumPenetration isn't reached
+                    //  - grenade base isn't found
+                    //  - throwable ins't found
+                    if (!grenadeInteractionConfig.IsEnabled || grenadeInteractionConfig.MinimumPenetration >= firearm.Penetration / 100 || !InventoryItemLoader.AvailableItems.TryGetValue(grenadePickup.Info.ItemId, out ItemBase grenadeBase) || (grenadeBase is not ThrowableItem grenadeThrowable))
                     {
                         return true;
                     }
@@ -383,7 +391,10 @@ namespace ShootingInteractions
                         Rigidbody grenadePickupRigidbody = grenadePickupPhysics.Rb;
                         grenadeProjectileRigidbody.position = grenadePickupRigidbody.position;
                         grenadeProjectileRigidbody.rotation = grenadePickupRigidbody.rotation;
-                        grenadeProjectileRigidbody.linearVelocity = grenadePickupRigidbody.linearVelocity + direction * (firearm.Penetration * (grenadeInteractionConfig.AdditionalVelocity ? grenadeInteractionConfig.BulletForce : 0));
+                        grenadeProjectileRigidbody.AddForce(
+                            direction
+                            * (grenadeInteractionConfig.AdditionalVelocity ? grenadeInteractionConfig.VelocityForce : 1)
+                            * (grenadeInteractionConfig.ScaleWithPenetration ? firearm.Penetration * grenadeInteractionConfig.VelocityPenetrationMultiplier : 1));
                     }
 
                     // Lock the grenade pickup
@@ -407,23 +418,25 @@ namespace ShootingInteractions
                     grenadeProjectile.ServerActivate();
                     grenadePickup.DestroySelf();
                 }
+
+                return false;
             }
 
             // SCP-018
-            else if (gameObject.GetComponentInParent<TimeGrenade>() is TimeGrenade scp018)
+            else if (gameObject.GetComponentInParent<TimeGrenade>() is TimeGrenade scp018 && gameObject.name.Contains("Scp018Projectile"))
             {
-                // Return if GameObject is not a SCP-018 projectile
-                if (!gameObject.name.Contains("Scp018Projectile"))
-                    return true;
 
-                Scp018Interaction grenadeInteractionConfig = Config.Scp018;
+                TimedProjectilesInteraction grenadeInteractionConfig = Config.Scp018;
 
-                // Return if MinimumPenetration isn't reached
-                if (grenadeInteractionConfig.MinimumPenetration >= firearm.Penetration)
-                    return true;
-
-                // Return if either: the interaction isn't enabled, it can't get the grenade base, or it can't get the throwable
-                if (!grenadeInteractionConfig.IsEnabled || !InventoryItemLoader.AvailableItems.TryGetValue(scp018.Info.ItemId, out ItemBase grenadeBase) || (grenadeBase is not ThrowableItem grenadeThrowable))
+                // Return if:
+                //  - interaction isn't enabled
+                //  - MinimumPenetration isn't reached
+                //  - grenade base isn't found
+                //  - throwable ins't found
+                if (!grenadeInteractionConfig.IsEnabled 
+                    || (grenadeInteractionConfig.MinimumPenetration >= firearm.Penetration / 100)
+                    || !InventoryItemLoader.AvailableItems.TryGetValue(scp018.Info.ItemId, out ItemBase grenadeBase) 
+                    || (grenadeBase is not ThrowableItem grenadeThrowable))
                     return true;
 
                 // Instantiate the projectile
@@ -438,7 +451,10 @@ namespace ShootingInteractions
                     Rigidbody grenadePickupRigidbody = grenadePickupPhysics.Rb;
                     grenadeProjectileRigidbody.position = grenadePickupRigidbody.position;
                     grenadeProjectileRigidbody.rotation = grenadePickupRigidbody.rotation;
-                    grenadeProjectileRigidbody.linearVelocity = grenadePickupRigidbody.linearVelocity + direction * (firearm.Penetration * (grenadeInteractionConfig.AdditionalVelocity ? grenadeInteractionConfig.BulletForce : 0));
+                    grenadeProjectileRigidbody.AddForce(
+                        direction 
+                        * (grenadeInteractionConfig.AdditionalVelocity ? grenadeInteractionConfig.VelocityForce : 1) 
+                        * (grenadeInteractionConfig.ScaleWithPenetration ? firearm.Penetration * grenadeInteractionConfig.VelocityPenetrationMultiplier : 1));
                 }
 
                 // Lock the grenade pickup
@@ -463,9 +479,67 @@ namespace ShootingInteractions
                 scp018.DestroySelf();
             }
 
+            // SCP-244
+            else if (gameObject.GetComponentInParent<Scp244DeployablePickup>() is Scp244DeployablePickup scp244)
+            {
+                // Return if:
+                //  - interaction isn't enabled
+                //  - MinimumPenetration isn't reached
+                if (!Config.Scp244.IsEnabled 
+                    || (Config.Scp244.MinimumPenetration >= firearm.Penetration / 100))
+                    return true;
+
+                // Shatters the SCP-244 deployable pickup
+                scp244.State = Scp244State.Destroyed;
+            }
+
             // SCP-2176
-            else if (gameObject.GetComponentInParent<Scp2176Projectile>() is Scp2176Projectile projectile && Config.Scp2176.IsEnabled)
+            else if (gameObject.GetComponentInParent<Scp2176Projectile>() is Scp2176Projectile projectile)
+            {
+                // Return if:
+                //  - interaction isn't enabled
+                //  - MinimumPenetration isn't reached
+                if (!Config.Scp2176.IsEnabled 
+                    || (Config.Scp2176.MinimumPenetration >= firearm.Penetration / 100))
+                    return true;
+
+                // Shatters the SCP-2176 projectile
                 projectile.ServerImmediatelyShatter();
+            }
+
+            // Nuke Cancel Button
+            else if (gameObject.GetComponentInParent<AlphaWarheadNukesitePanel>() is AlphaWarheadNukesitePanel warheadAlpha && gameObject.name.Contains("cancel"))
+            {
+                // Return if:
+                //  - interaction isn't enabled
+                //  - MinimumPenetration isn't reached
+                if (!Config.NukeCancelButton.IsEnabled 
+                    || (Config.NukeCancelButton.MinimumPenetration >= firearm.Penetration / 100))
+                    return true;
+
+                // Stops the nuke detonation
+                AlphaWarheadController.Singleton?.CancelDetonation(player.ReferenceHub);
+            }
+
+            // Nuke Start Button
+            else if (gameObject.GetComponentInParent<InteractableCollider>() is not null && gameObject.name.Contains("Button") && player.CurrentRoom.Type == RoomType.Surface)
+            {
+                // Return if:
+                //  - interaction isn't enabled
+                //  - MinimumPenetration isn't reached
+                //  - warhead isn't activated
+                //  - warhead lever isn't pulled
+                //  - warhead is locked
+                if (!Config.NukeCancelButton.IsEnabled 
+                    || (Config.NukeCancelButton.MinimumPenetration >= firearm.Penetration / 100)
+                    || !Warhead.IsKeycardActivated 
+                    || !Warhead.LeverStatus 
+                    || !Warhead.CanBeStarted)
+                    return true;
+
+                // Starts the nuke detonation countdown
+                Warhead.Start();
+            }
 
             return false;
         }
