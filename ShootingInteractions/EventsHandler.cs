@@ -1,4 +1,5 @@
-﻿using Exiled.API.Features;
+﻿using Exiled.API.Enums;
+using Exiled.API.Features;
 using Exiled.API.Features.Doors;
 using Exiled.API.Features.Items;
 using Exiled.API.Features.Pickups;
@@ -14,7 +15,6 @@ using InventorySystem.Items.Usables.Scp244;
 using MapGeneration.Distributors;
 using MEC;
 using Mirror;
-using NorthwoodLib;
 using ShootingInteractions.Configuration;
 using ShootingInteractions.Configuration.Bases;
 using System.Collections.Generic;
@@ -24,11 +24,10 @@ using BasicDoor = Exiled.API.Features.Doors.BasicDoor;
 using CheckpointDoor = Exiled.API.Features.Doors.CheckpointDoor;
 using DoorLockType = Exiled.API.Enums.DoorLockType;
 using ElevatorDoor = Interactables.Interobjects.ElevatorDoor;
+using InteractableCollider = Interactables.InteractableCollider;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 using Scp2176Projectile = InventorySystem.Items.ThrowableProjectiles.Scp2176Projectile;
-using InteractableCollider = Interactables.InteractableCollider;
-using Exiled.API.Enums;
 
 namespace ShootingInteractions
 {
@@ -103,11 +102,11 @@ namespace ShootingInteractions
                 //  - door is moving
                 //  - door is locked, and bypass mode is disabled
                 //  - it's an open checkpoint
-                if (!doorInteractionConfig.IsEnabled 
-                    || (doorInteractionConfig.MinimumPenetration / 100 >= firearm.Penetration) 
-                    || door is null 
-                    || door.IsMoving 
-                    || (door.IsLocked && !player.IsBypassModeEnabled) 
+                if (!doorInteractionConfig.IsEnabled
+                    || (doorInteractionConfig.MinimumPenetration / 100 >= firearm.Penetration)
+                    || door is null
+                    || door.IsMoving
+                    || (door.IsLocked && !player.IsBypassModeEnabled)
                     || (door.IsCheckpoint && door.IsOpen))
                     return true;
 
@@ -196,7 +195,7 @@ namespace ShootingInteractions
                 //  - interaction isn't enabled
                 //  - MinimumPenetration isn't reached
                 //  - OnlyKeypad isn't enabled
-                if (!lockerInteractionConfig.IsEnabled 
+                if (!lockerInteractionConfig.IsEnabled
                     || (lockerInteractionConfig.MinimumPenetration / 100 >= firearm.Penetration)
                     || (lockerInteractionConfig is BulletproofLockersInteraction bulletProofLockerInteractionConfig && gameObject.name == "Collider Door" && bulletProofLockerInteractionConfig.OnlyKeypad))
                     return true;
@@ -283,13 +282,13 @@ namespace ShootingInteractions
                 //  - elevator is moving
                 //  - elevator is locked and bypass mode is disabled
                 //  - no elevator doors
-                if (!elevatorInteractionConfig.IsEnabled 
-                    || (elevatorInteractionConfig.MinimumPenetration / 100 >= firearm.Penetration) 
-                    || panel.AssignedChamber is null 
-                    || elevator is null 
-                    || elevator.IsMoving 
-                    || !elevator.IsOperative 
-                    || (elevator.IsLocked && !player.IsBypassModeEnabled) 
+                if (!elevatorInteractionConfig.IsEnabled
+                    || (elevatorInteractionConfig.MinimumPenetration / 100 >= firearm.Penetration)
+                    || panel.AssignedChamber is null
+                    || elevator is null
+                    || elevator.IsMoving
+                    || !elevator.IsOperative
+                    || (elevator.IsLocked && !player.IsBypassModeEnabled)
                     || !ElevatorDoor.AllElevatorDoors.TryGetValue(panel.AssignedChamber.AssignedGroup, out List<ElevatorDoor> list))
                     return true;
 
@@ -350,7 +349,7 @@ namespace ShootingInteractions
                     // Return if:
                     //  - interaction isn't enabled
                     //  - MinimumPenetration isn't reached
-                    if (!Config.CustomGrenades.IsEnabled 
+                    if (!Config.CustomGrenades.IsEnabled
                         || (Config.CustomGrenades.MinimumPenetration >= firearm.Penetration / 100))
                         return true;
 
@@ -433,9 +432,9 @@ namespace ShootingInteractions
                 //  - MinimumPenetration isn't reached
                 //  - grenade base isn't found
                 //  - throwable ins't found
-                if (!grenadeInteractionConfig.IsEnabled 
+                if (!grenadeInteractionConfig.IsEnabled
                     || (grenadeInteractionConfig.MinimumPenetration >= firearm.Penetration / 100)
-                    || !InventoryItemLoader.AvailableItems.TryGetValue(scp018.Info.ItemId, out ItemBase grenadeBase) 
+                    || !InventoryItemLoader.AvailableItems.TryGetValue(scp018.Info.ItemId, out ItemBase grenadeBase)
                     || (grenadeBase is not ThrowableItem grenadeThrowable))
                     return true;
 
@@ -452,8 +451,8 @@ namespace ShootingInteractions
                     grenadeProjectileRigidbody.position = grenadePickupRigidbody.position;
                     grenadeProjectileRigidbody.rotation = grenadePickupRigidbody.rotation;
                     grenadeProjectileRigidbody.AddForce(
-                        direction 
-                        * (grenadeInteractionConfig.AdditionalVelocity ? grenadeInteractionConfig.VelocityForce : 1) 
+                        direction
+                        * (grenadeInteractionConfig.AdditionalVelocity ? grenadeInteractionConfig.VelocityForce : 1)
                         * (grenadeInteractionConfig.ScaleWithPenetration ? firearm.Penetration * grenadeInteractionConfig.VelocityPenetrationMultiplier : 1));
                 }
 
@@ -485,7 +484,7 @@ namespace ShootingInteractions
                 // Return if:
                 //  - interaction isn't enabled
                 //  - MinimumPenetration isn't reached
-                if (!Config.Scp244.IsEnabled 
+                if (!Config.Scp244.IsEnabled
                     || (Config.Scp244.MinimumPenetration >= firearm.Penetration / 100))
                     return true;
 
@@ -499,7 +498,7 @@ namespace ShootingInteractions
                 // Return if:
                 //  - interaction isn't enabled
                 //  - MinimumPenetration isn't reached
-                if (!Config.Scp2176.IsEnabled 
+                if (!Config.Scp2176.IsEnabled
                     || (Config.Scp2176.MinimumPenetration >= firearm.Penetration / 100))
                     return true;
 
@@ -513,7 +512,7 @@ namespace ShootingInteractions
                 // Return if:
                 //  - interaction isn't enabled
                 //  - MinimumPenetration isn't reached
-                if (!Config.NukeCancelButton.IsEnabled 
+                if (!Config.NukeCancelButton.IsEnabled
                     || (Config.NukeCancelButton.MinimumPenetration >= firearm.Penetration / 100))
                     return true;
 
@@ -530,10 +529,10 @@ namespace ShootingInteractions
                 //  - warhead isn't activated
                 //  - warhead lever isn't pulled
                 //  - warhead is locked
-                if (!Config.NukeCancelButton.IsEnabled 
+                if (!Config.NukeCancelButton.IsEnabled
                     || (Config.NukeCancelButton.MinimumPenetration >= firearm.Penetration / 100)
-                    || !Warhead.IsKeycardActivated 
-                    || !Warhead.LeverStatus 
+                    || !Warhead.IsKeycardActivated
+                    || !Warhead.LeverStatus
                     || !Warhead.CanBeStarted)
                     return true;
 
