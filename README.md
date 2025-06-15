@@ -90,7 +90,7 @@ A plugin that adds new interactions when shooting on objects!
 | additional_velocity | bool | false | Should the bullet affect the object's velocity
 | velocity_force | float | 7.5 | The force of the bullet that gets multiplied with the object velocity
 | scale_with_penetration | bool | false | Should the bullet armor penetration affect the object's velocity
-| velocity_force | float | 7.5 | Constant that gets multiplied with the object velocity and bullet armor penetration
+| velocity_penetration_multiplier | float | 7.5 | Constant that gets multiplied with the object velocity and bullet armor penetration
 
 ## NukeButtonsInteraction Configuration Settings
 | Setting Key | Value Type | Default Value | Description |
