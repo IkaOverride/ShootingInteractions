@@ -464,9 +464,6 @@ namespace ShootingInteractions
                 scp018.PreviousOwner = player.Footprint;
                 scp018Projectile.PreviousOwner = player.Footprint;
 
-                // Spawn the grenade projectile
-                NetworkServer.Spawn(scp018Projectile.gameObject);
-
                 // Should the grenade have a custom fuse time ? (Generate number from 1 to 100 then check if lesser than interaction percentage)
                 if (Random.Range(1, 101) <= grenadeInteractionConfig.CustomFuseTimeChance)
 
@@ -475,7 +472,6 @@ namespace ShootingInteractions
 
                 // Activate the projectile and destroy the pickup
                 scp018Projectile.ServerActivate();
-                scp018.DestroySelf();
             }
 
             // SCP-244

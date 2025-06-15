@@ -21,7 +21,7 @@ namespace ShootingInteractions
 
         public override Version RequiredExiledVersion => new(9, 6, 0);
 
-        public override Version Version => new(2, 5, 0);
+        public override Version Version => new(2, 5, 1);
 
         public override PluginPriority Priority => PluginPriority.First;
 
