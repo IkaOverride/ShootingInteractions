@@ -19,7 +19,7 @@ namespace ShootingInteractions
 
         public override string Author => "Ika, Maintained by Unbistrackted";
 
-        public override Version RequiredExiledVersion => new(9, 6, 0);
+        public override Version RequiredExiledVersion => new(9, 6, 1);
 
         public override Version Version => new(2, 5, 1);
 
